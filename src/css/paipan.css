@@ -1,0 +1,39 @@
+/* 六爻纳甲排盘
+ * 常规排盘布局：六神列在左，主卦（六亲+干支+爻符+世应）在中，变卦同构在右。
+ * 沿用问玄既有纸墨/朱砂配色，不引入新的视觉语言。 */
+.paipan-panel { margin-top: 20px; padding: 18px 20px 15px; background: var(--card); border: 1px solid var(--border); border-radius: 9px; }
+.paipan-head { margin-bottom: 10px; }
+.paipan-head h3 { margin: 0 0 6px; font: 500 16px/1.5 var(--serif); letter-spacing: 2px; }
+.pp-type { margin-left: 2px; color: #a49a87; font-size: 10px; letter-spacing: 0; font-weight: 400; }
+.pp-info { margin-top: 4px; color: #8f8a7c; font-size: 10px; letter-spacing: .5px; line-height: 1.9; }
+.pp-info .pp-info-label { display: inline-block; min-width: 30px; color: #a49a87; }
+.pp-info .pp-sep { margin: 0 8px; color: #d8d2c4; }
+.pp-moving-line { margin-top: 2px; color: var(--red); font-size: 10px; letter-spacing: .5px; line-height: 1.9; }
+.paipan-scroll { overflow-x: auto; margin: 10px -4px 0; padding: 0 4px 2px; }
+.paipan-table { width: 100%; min-width: 430px; border-collapse: collapse; font-size: 11px; }
+.paipan-table th { padding: 0 6px 8px; border-bottom: 1px solid var(--border); color: #969285; font-size: 10px; font-weight: 500; letter-spacing: 1px; text-align: left; white-space: nowrap; }
+.paipan-table th.pp-th-god { width: 34px; }
+.paipan-table td { padding: 9px 6px; border-bottom: 1px solid #efebe16e; vertical-align: middle; }
+.paipan-row:last-child td { border-bottom: 0; }
+.pp-god { color: #a49a87; white-space: nowrap; }
+.pp-line-row { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.pp-qin { color: var(--ink); }
+.pp-gz { color: #8f8a7c; }
+/* 爻符：块状横线，阴爻两段 */
+.pp-yao { position: relative; flex: 0 0 auto; width: 38px; height: 5px; border-radius: 1px; background: #55534a; }
+.pp-yao.is-yin { background: linear-gradient(to right, #55534a 0 42%, transparent 42% 58%, #55534a 58% 100%); }
+.paipan-row.is-moving .pp-cell-main .pp-yao, .paipan-row.is-moving .pp-cell-main .pp-yao.is-yin { background: var(--red); }
+.paipan-row.is-moving .pp-cell-main .pp-yao.is-yin { background: linear-gradient(to right, var(--red) 0 42%, transparent 42% 58%, var(--red) 58% 100%); }
+/* 世应 / 动爻标记 */
+.pp-flag { flex: 0 0 auto; box-sizing: border-box; min-width: 17px; height: 17px; padding: 0 2px; border: 1px solid var(--red); border-radius: 3px; color: var(--red); font-size: 10px; line-height: 15px; text-align: center; }
+.pp-mark { flex: 0 0 auto; margin-left: -3px; color: var(--red); font-size: 12px; font-weight: 600; }
+/* 伏神 */
+.pp-hide { margin: 3px 0 0 0; color: #b0a795; font-size: 10px; white-space: nowrap; }
+.paipan-note { margin: 10px 2px 0; color: #a49a87; font-size: 9px; letter-spacing: .5px; line-height: 1.8; }
+@media (max-width: 640px) {
+  .paipan-panel { margin-top: 17px; padding: 15px 14px 13px; }
+  .paipan-head h3 { font-size: 14px; letter-spacing: 1px; }
+  .paipan-table { min-width: 400px; font-size: 10px; }
+  .pp-yao { width: 32px; }
+  .pp-line-row { gap: 5px; }
+}
