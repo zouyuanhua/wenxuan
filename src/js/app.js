@@ -30,14 +30,21 @@
   const readingError = document.getElementById('reading-error');
   const serviceLink = document.getElementById('reading-service-link');
   const dialog = document.getElementById('method-dialog');
-  const centeringDialog = document.getElementById('centering-dialog');
-  const centeringQuestion = document.getElementById('centering-question');
+  const categoriesBox = document.getElementById('ask-categories');
+  const tagline = document.getElementById('ask-tagline');
+  const subsBox = document.getElementById('ask-subs');
+  const askCount = document.getElementById('ask-count');
+  const atmosphere = document.getElementById('ask-atmosphere');
+  const soundToggle = document.getElementById('sound-toggle');
+  const disclaimerToggle = document.getElementById('ask-disclaimer-toggle');
+  const disclaimerFull = document.getElementById('ask-disclaimer-full');
   const positions = ['初爻', '二爻', '三爻', '四爻', '五爻', '上爻'];
   const numerals = ['一', '二', '三', '四', '五', '六'];
   const combinations = ['三个字', '两字一背', '两背一字', '三个背'];
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const svgNamespace = 'http://www.w3.org/2000/svg';
-  const maxQuestionLength = 2000;
+  const maxQuestionLength = 200;
+  const minQuestionLength = 5;
   const interpretationTimeout = 75000;
   const rows = [];
   const lines = [];
@@ -47,59 +54,262 @@
   let interpreting = false;
   let interpretation = null;
   let interpretationFailed = false;
+  let selectedCategory = null;
+  let soundOn = window.localStorage.getItem('wenxuan.sound') !== 'off';
+  let audioContext = null;
+
+  function codePointLength(text) {
+    return Array.from(text).length;
+  }
+
+  function tone(freq, duration, type, gainValue, when) {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = type;
+    oscillator.frequency.value = freq;
+    gain.gain.setValueAtTime(gainValue, when);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start(when);
+    oscillator.stop(when + duration + 0.05);
+  }
+
+  function playNoise(duration, filterFreq, gainValue) {
+    const rate = audioContext.sampleRate;
+    const buffer = audioContext.createBuffer(1, Math.max(1, Math.floor(rate * duration)), rate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = filterFreq;
+    const gain = audioContext.createGain();
+    gain.gain.value = gainValue;
+    source.connect(filter).connect(gain).connect(audioContext.destination);
+    source.start();
+  }
+
+  function sfx(kind) {
+    if (!soundOn) return;
+    try {
+      const AudioCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtor) return;
+      if (!audioContext) audioContext = new AudioCtor();
+      if (audioContext.state === 'suspended') audioContext.resume();
+      const now = audioContext.currentTime;
+      if (kind === 'paper') playNoise(0.14, 2600, 0.05);
+      else if (kind === 'stick') {
+        playNoise(0.18, 3400, 0.035);
+        [1760, 1320, 2093].forEach((freq, index) => tone(freq, 0.05, 'triangle', 0.05, now + 0.05 + index * 0.055));
+      } else if (kind === 'bell') {
+        tone(880, 0.9, 'sine', 0.09, now);
+        tone(1318, 0.55, 'sine', 0.035, now + 0.01);
+      } else if (kind === 'flame') playNoise(1.05, 640, 0.06);
+    } catch (error) { /* 音效不可用时静默 */ }
+  }
+
+  function buzz(pattern) {
+    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (error) { /* 不支持则忽略 */ }
+  }
+
+  function renderSoundToggle() {
+    soundToggle.classList.toggle('is-muted', !soundOn);
+    soundToggle.setAttribute('aria-pressed', String(soundOn));
+    soundToggle.title = soundOn ? '关闭音效' : '开启音效';
+  }
+
+  soundToggle.addEventListener('click', () => {
+    soundOn = !soundOn;
+    window.localStorage.setItem('wenxuan.sound', soundOn ? 'on' : 'off');
+    renderSoundToggle();
+    if (soundOn) sfx('bell');
+  });
+  renderSoundToggle();
+
+  disclaimerToggle.addEventListener('click', () => {
+    disclaimerFull.hidden = !disclaimerFull.hidden;
+    disclaimerToggle.setAttribute('aria-expanded', String(!disclaimerFull.hidden));
+  });
+
+  if (window.AskData) atmosphere.textContent = window.AskData.atmosphereText(new Date());
+
+  function refreshValidity() {
+    const length = codePointLength(questionInput.value.trim());
+    askCount.textContent = length + ' / ' + maxQuestionLength;
+    askCount.classList.toggle('is-over', length >= maxQuestionLength);
+    const valid = selectedCategory !== null && length >= minQuestionLength && length <= maxQuestionLength;
+    lockQuestion.disabled = !valid || lockedQuestion !== null;
+    if (valid) {
+      questionSection.classList.remove('has-error');
+      questionInput.removeAttribute('aria-invalid');
+      questionHelp.textContent = window.AskData ? window.AskData.COPY.validHelp : '分类已定，疏文已备。';
+    }
+  }
+
+  function failAsk(message) {
+    questionSection.classList.add('has-error');
+    questionInput.setAttribute('aria-invalid', 'true');
+    questionHelp.textContent = message;
+    questionInput.focus();
+    sfx('paper');
+    buzz([26, 40, 26]);
+  }
+
+  function selectCategory(category, button) {
+    if (lockedQuestion !== null) return;
+    const switched = selectedCategory !== null && selectedCategory.id !== category.id;
+    selectedCategory = category;
+    Array.from(categoriesBox.children).forEach(element => {
+      const isSelected = element === button;
+      element.classList.toggle('is-selected', isSelected);
+      element.setAttribute('aria-selected', String(isSelected));
+    });
+    tagline.textContent = category.tagline;
+    tagline.hidden = false;
+    tagline.classList.remove('is-visible');
+    void tagline.offsetWidth;
+    tagline.classList.add('is-visible');
+    sfx('paper');
+    buzz(18);
+    if (switched) questionInput.value = '';
+    subsBox.replaceChildren();
+    category.subs.forEach(sub => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'ask-sub';
+      chip.textContent = sub.name;
+      chip.addEventListener('click', () => {
+        if (lockedQuestion !== null) return;
+        questionInput.value = sub.tpl;
+        Array.from(subsBox.querySelectorAll('.ask-sub')).forEach(element => element.classList.toggle('is-selected', element === chip));
+        sfx('stick');
+        buzz(18);
+        refreshValidity();
+        questionInput.focus();
+      });
+      subsBox.appendChild(chip);
+    });
+    const freeChip = document.createElement('button');
+    freeChip.type = 'button';
+    freeChip.className = 'ask-sub ask-sub-free';
+    freeChip.textContent = window.AskData.COPY.freeAsk;
+    freeChip.addEventListener('click', () => {
+      if (lockedQuestion !== null) return;
+      Array.from(subsBox.querySelectorAll('.ask-sub')).forEach(element => element.classList.remove('is-selected'));
+      sfx('stick');
+      buzz(12);
+      questionInput.focus();
+    });
+    subsBox.appendChild(freeChip);
+    subsBox.hidden = false;
+    if (switched) questionHelp.textContent = window.AskData.COPY.switchCategory;
+    refreshValidity();
+  }
+
+  if (window.AskData) {
+    window.AskData.CATEGORIES.forEach(category => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ask-category';
+      button.setAttribute('role', 'option');
+      button.setAttribute('aria-selected', 'false');
+      const icon = document.createElement('span');
+      icon.className = 'ask-cat-icon';
+      icon.textContent = category.icon;
+      const name = document.createElement('span');
+      name.className = 'ask-cat-name';
+      name.textContent = category.name;
+      button.append(icon, name);
+      button.addEventListener('click', () => selectCategory(category, button));
+      categoriesBox.appendChild(button);
+    });
+  } else {
+    lockQuestion.disabled = true;
+    questionHelp.textContent = '问事台数据未加载，请刷新页面重试。';
+  }
 
   questionInput.addEventListener('input', () => {
     if (lockedQuestion !== null) {
       questionInput.value = lockedQuestion;
       return;
     }
-    const hasQuestion = questionInput.value.trim().length > 0;
-    lockQuestion.disabled = !hasQuestion || questionInput.value.trim().length > maxQuestionLength;
-    if (hasQuestion) {
+    if (questionSection.classList.contains('has-error')) {
       questionSection.classList.remove('has-error');
       questionInput.removeAttribute('aria-invalid');
-      questionHelp.textContent = '锁定后不可修改，确定后即可起卦。';
+      questionHelp.textContent = window.AskData ? window.AskData.COPY.defaultHelp : '';
     }
+    refreshValidity();
   });
 
   questionForm.addEventListener('submit', event => {
     event.preventDefault();
     if (lockedQuestion !== null) return;
     const question = questionInput.value.trim();
-    if (!question || question.length > maxQuestionLength) {
-      questionSection.classList.add('has-error');
-      questionInput.setAttribute('aria-invalid', 'true');
-      questionHelp.textContent = question ? '问题请控制在2000字以内。' : '请先写下你想问的问题。';
-      questionInput.focus();
-      return;
-    }
+    const length = codePointLength(question);
+    if (selectedCategory === null) { failAsk(window.AskData.COPY.noCategory); return; }
+    if (!question) { failAsk(window.AskData.COPY.emptyQuestion); return; }
+    if (length < minQuestionLength) { failAsk(window.AskData.COPY.tooShort); return; }
+    if (length > maxQuestionLength) { failAsk(window.AskData.COPY.tooLong); return; }
     lockedQuestion = question;
     questionInput.value = lockedQuestion;
     questionInput.readOnly = true;
     lockQuestion.disabled = true;
-    lockQuestionLabel.textContent = '问题已锁定';
-    questionState.textContent = '已锁定';
-    questionHelp.textContent = '问题已锁定，请静心片刻。';
+    lockQuestionLabel.textContent = '疏文已焚 · 静候起卦';
+    questionState.textContent = '已诚心';
+    questionHelp.textContent = window.AskData.COPY.lockedHelp;
     questionInput.removeAttribute('aria-invalid');
     questionSection.classList.remove('has-error');
     questionSection.classList.add('is-locked');
-    centeringQuestion.textContent = lockedQuestion;
     preparing = true;
-    status.textContent = '静心凝神，专注所问。';
+    status.textContent = '疏文已焚，静心凝神。';
     updateControls();
-    centeringDialog.showModal();
+    burnThenCast();
   });
 
-  document.getElementById('confirm-centering').addEventListener('click', () => centeringDialog.close());
-  document.getElementById('close-centering').addEventListener('click', () => centeringDialog.close());
-  centeringDialog.addEventListener('close', () => {
-    if (!preparing) return;
-    preparing = false;
-    questionHelp.textContent = '问题已锁定，可以开始摇卦。';
-    status.textContent = '问题已锁定 · 轻点铜钱，摇出初爻';
-    updateControls();
-    control.focus({ preventScroll: true });
-  });
+  function burnThenCast() {
+    const overlay = document.createElement('div');
+    overlay.className = 'burn-overlay';
+    const paper = document.createElement('div');
+    paper.className = 'burn-paper';
+    const text = document.createElement('p');
+    text.className = 'burn-text';
+    text.textContent = lockedQuestion;
+    const flame = document.createElement('span');
+    flame.className = 'burn-flame';
+    flame.setAttribute('aria-hidden', 'true');
+    const smoke = document.createElement('span');
+    smoke.className = 'burn-smoke';
+    smoke.setAttribute('aria-hidden', 'true');
+    paper.append(text, flame, smoke);
+    const skip = document.createElement('p');
+    skip.className = 'burn-skip';
+    skip.textContent = window.AskData.COPY.burnSkip;
+    overlay.append(paper, skip);
+    document.body.appendChild(overlay);
+    sfx('bell');
+    buzz([40, 30, 60]);
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      overlay.classList.add('is-done');
+      window.setTimeout(() => overlay.remove(), 180);
+      preparing = false;
+      questionHelp.textContent = '诚心已备，轻点铜钱，摇出初爻。';
+      status.textContent = '问题已锁定 · 轻点铜钱，摇出初爻';
+      updateControls();
+      document.getElementById('casting-card').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
+      control.focus({ preventScroll: true });
+    };
+    overlay.addEventListener('click', finish);
+    if (reducedMotion.matches) {
+      window.setTimeout(finish, 260);
+      return;
+    }
+    window.setTimeout(() => sfx('flame'), 340);
+    window.setTimeout(finish, 1250);
+  }
 
   function yaoSVG(yang, moving) {
     const svg = document.createElementNS(svgNamespace, 'svg');
@@ -181,10 +391,10 @@
       step.classList.toggle('is-current', questionLocked && !preparing && !complete && index === lines.length);
     });
     if (!casting) {
-      stageKicker.textContent = !questionLocked ? '待锁定问题' : preparing ? '静心凝神' : complete ? '六爻已成 · 静观其变' : '第' + numerals[lines.length] + '摇 · ' + positions[lines.length];
-      hint.textContent = !questionLocked ? '先锁定上方问题，再开始摇卦' : preparing ? '专注所问，静候起卦' : complete ? '六爻已成，可点击下方「解卦」' : (lines.length ? '再点铜钱，摇出' : '轻点铜钱，摇出') + positions[lines.length];
+      stageKicker.textContent = !questionLocked ? '待诚心发问' : preparing ? '疏文已焚' : complete ? '六爻已成 · 静观其变' : '第' + numerals[lines.length] + '摇 · ' + positions[lines.length];
+      hint.textContent = !questionLocked ? '先在问事台抽签写下所问' : preparing ? '专注所问，静候起卦' : complete ? '六爻已成，可点击下方「解卦」' : (lines.length ? '再点铜钱，摇出' : '轻点铜钱，摇出') + positions[lines.length];
     }
-    control.setAttribute('aria-label', !questionLocked ? '请先锁定问题后再起卦' : preparing ? '请先静心准备后再起卦' : complete ? '六爻已成，铜钱已锁定' : '第' + (lines.length + 1) + '次，点击三枚铜钱摇出' + positions[lines.length]);
+    control.setAttribute('aria-label', !questionLocked ? '请先在问事台诚心发问' : preparing ? '疏文已焚，静候起卦' : complete ? '六爻已成，铜钱已锁定' : '第' + (lines.length + 1) + '次，点击三枚铜钱摇出' + positions[lines.length]);
   }
 
   function renderRow(index, line) {

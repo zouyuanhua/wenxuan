@@ -362,3 +362,66 @@ dialog h2 { font: 400 24px/1.6 var(--serif); letter-spacing: 1px; margin: 13px 0
   .coin-stage.is-shaking .coin-visual, .coin-stage.is-settled .coin-visual, .coin-control:hover:not(:disabled) .coin-visual { transform: none; }
   .centering-dialog[open], .centering-emblem::before, .centering-emblem::after { animation: none !important; transform: none; }
 }
+
+/* ---- 问事台(FR-01 / SRS v0.2 附录A) ---- */
+.header-actions { display: flex; align-items: center; gap: 2px; }
+.ask-stage { padding: 14px 4px 0; }
+.ask-atmosphere { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0 0 4px; color: #a09a89; font-size: 10px; letter-spacing: 2.5px; }
+.ask-atmosphere::before, .ask-atmosphere::after { content: ""; width: 22px; height: 1px; background: #d8d2c4; }
+.ask-title { margin: 0 0 2px; text-align: center; font: 600 30px var(--serif); letter-spacing: 8px; color: var(--ink); }
+.ask-guide { margin: 0 0 12px; text-align: center; color: #a89f8d; font-size: 11px; letter-spacing: 2px; }
+.ask-categories { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+@media (max-width: 430px) { .ask-categories { grid-template-columns: repeat(3, 1fr); } }
+.ask-category { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 4px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 9px; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.ask-category:hover:not(:disabled) { transform: translateY(-2px); border-color: #cdbfa5; box-shadow: 0 6px 18px #42351c10; }
+.ask-category.is-selected { border-color: var(--red); box-shadow: 0 0 0 3px #984b4014; }
+.ask-category.is-selected .ask-cat-icon { transform: scale(1.12); }
+.ask-category:disabled { opacity: .55; cursor: default; }
+.ask-cat-icon { font-size: 20px; line-height: 1; transition: transform .18s ease; }
+.ask-cat-name { font: 500 12px var(--serif); letter-spacing: 1.5px; color: #5d5a4e; }
+.ask-category.is-selected .ask-cat-name { color: var(--red); }
+.ask-tagline { margin: 12px 0 0; text-align: center; color: var(--red); font: 500 13px/1.8 var(--serif); letter-spacing: 2px; }
+.ask-tagline.is-visible { animation: tagline-float .45s ease-out both; }
+@keyframes tagline-float { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+.ask-subs { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.ask-sub { padding: 6px 12px; background: #fdfcf8; border: 1px solid #ddd5c6; border-radius: 999px; color: #6d6a5c; font-size: 11px; letter-spacing: 1px; transition: border-color .15s ease, color .15s ease, background-color .15s ease; }
+.ask-sub:hover { border-color: #c9b896; color: var(--red); }
+.ask-sub.is-selected { background: var(--red); border-color: var(--red); color: #fff6ea; }
+.ask-sub:disabled { opacity: .55; cursor: default; }
+.ask-sub-free { border-style: dashed; color: #a49b89; }
+.ask-paper { position: relative; margin-top: 12px; }
+.ask-paper .question-input { min-height: 96px; font-family: var(--serif); letter-spacing: 1px; background: linear-gradient(#fdfbf3, #f9f5e9); }
+.ask-count { position: absolute; right: 10px; bottom: 8px; color: #b9b19e; font-size: 9px; letter-spacing: 1px; }
+.ask-count.is-over { color: var(--red); font-weight: 600; }
+.ask-confirm { min-width: 168px; min-height: 38px; font-size: 11px; letter-spacing: 2.5px; }
+.question-section.is-locked .ask-category, .question-section.is-locked .ask-sub { opacity: .55; pointer-events: none; }
+.question-section.has-error .ask-paper { animation: ask-shake .32s ease; }
+@keyframes ask-shake { 0%, 100% { transform: none; } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
+.ask-disclaimer { margin-top: 12px; text-align: center; color: #aaa292; font-size: 9px; letter-spacing: 1px; }
+.ask-disclaimer-toggle { margin-left: 4px; padding: 1px 5px; border: 0; background: none; color: #a89f8d; font-size: 9px; }
+.ask-disclaimer-toggle:hover { color: var(--red); }
+.ask-disclaimer-full { margin: 6px auto 0; max-width: 420px; color: #a49b89; font-size: 9px; line-height: 1.8; }
+.sound-toggle { display: flex; align-items: center; gap: 5px; background: none; border: 0; color: #777a70; font-size: 12px; padding: 9px 0 9px 10px; }
+.sound-toggle:hover { color: var(--red); }
+.sound-toggle svg { width: 17px; height: 17px; }
+.sound-toggle .mute-line { display: none; }
+.sound-toggle.is-muted { color: #c2bcae; }
+.sound-toggle.is-muted .mute-line { display: block; }
+.sound-toggle.is-muted svg path:not(.mute-line) { opacity: .45; }
+.burn-overlay { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #23211ae6; backdrop-filter: blur(4px); cursor: pointer; }
+.burn-paper { position: relative; width: min(320px, 78vw); padding: 26px 24px 22px; background: #fbf6ea; border-radius: 3px 5px 4px 6px; box-shadow: 0 18px 60px #00000059; transform-origin: 50% 100%; animation: paper-crumple .35s ease-in both, paper-burn .4s .35s ease-in both, paper-ash .5s .78s ease-in both; }
+.burn-text { margin: 0; max-height: 40vh; overflow: auto; color: #4a463c; font: 13px/2 var(--serif); letter-spacing: 1px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.burn-flame { position: absolute; left: 50%; bottom: -6px; width: 130px; height: 90px; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 100%, #ffd9a055 0%, #ff9c3f66 34%, #e2582277 60%, transparent 78%); filter: blur(6px); opacity: 0; animation: flame-rise .42s .35s ease-out both, flame-flick .18s .4s ease-in-out 4 alternate; }
+.burn-smoke { position: absolute; left: 50%; top: -30px; width: 90px; height: 150px; transform: translateX(-50%); background: radial-gradient(ellipse, #d9d4c955, transparent 70%); filter: blur(14px); opacity: 0; animation: smoke-rise .5s .78s ease-out both; }
+.burn-skip { position: fixed; bottom: 26px; left: 0; right: 0; text-align: center; color: #b9b3a2; font-size: 10px; letter-spacing: 2px; }
+.burn-overlay.is-done { opacity: 0; transition: opacity .18s ease; }
+@keyframes paper-crumple { to { transform: scale(.92) rotate(-2.5deg) skewX(3deg); border-radius: 12% 6% 14% 8%; } }
+@keyframes paper-burn { 40% { filter: brightness(1.35) sepia(.4); } to { transform: scale(.9) rotate(2deg); filter: brightness(.6) sepia(.9) saturate(.6); } }
+@keyframes paper-ash { to { transform: scale(.82) rotate(-3deg) translateY(10px); opacity: .25; filter: grayscale(.8) brightness(.7); } }
+@keyframes flame-rise { from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(.7); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+@keyframes flame-flick { to { transform: translateX(-50%) scale(1.12, .92); } }
+@keyframes smoke-rise { from { opacity: .85; transform: translateX(-50%) translateY(6px); } to { opacity: 0; transform: translateX(-50%) translateY(-42px); } }
+@media (prefers-reduced-motion: reduce) {
+  .ask-category, .ask-sub, .ask-tagline.is-visible, .ask-paper, .burn-paper, .burn-flame, .burn-smoke { animation: none !important; transition: none !important; }
+  .burn-overlay { backdrop-filter: none; }
+}
