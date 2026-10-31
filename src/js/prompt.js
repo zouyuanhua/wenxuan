@@ -31,8 +31,6 @@
   let loadFailed = false;
   let saveFailure = '';
   let loadFailure = '';
-  let saveTimer;
-  let lastEditAt = 0;
   let debugging = false;
   let debugFailed = false;
   let debugSucceeded = false;
@@ -88,7 +86,7 @@
       state = 'saving'; message = '保存中';
     } else if (dirty() && !valid) {
       state = 'invalid'; message = '尚未保存';
-      error = !value.trim() ? '提示词不能为空，请输入内容后自动保存。' : '提示词最多为 ' + maxLength.toLocaleString('zh-CN') + ' 个字符。';
+      error = !value.trim() ? '提示词不能为空，请输入内容后点击「立即保存」。' : '提示词最多为 ' + maxLength.toLocaleString('zh-CN') + ' 个字符。';
     } else if (saveFailure) {
       state = 'error'; message = '保存失败'; error = saveFailure;
     } else if (dirty()) {
@@ -133,13 +131,6 @@
     return data;
   }
 
-  function scheduleSave() {
-    window.clearTimeout(saveTimer);
-    if (!offline && validPrompt(editor.value) && dirty()) {
-      saveTimer = window.setTimeout(savePrompt, Math.max(0, 700 - (Date.now() - lastEditAt)));
-    }
-  }
-
   async function loadPrompt() {
     if (offline || loading || saving) return;
     const startRevision = revision;
@@ -162,12 +153,10 @@
     } finally {
       loading = false;
       updateUI();
-      if (revision > 0) scheduleSave();
     }
   }
 
   async function savePrompt() {
-    window.clearTimeout(saveTimer);
     if (offline || loading || saving || !dirty() || !validPrompt(editor.value)) return;
     const draft = editor.value;
     const saveRevision = revision;
@@ -190,16 +179,13 @@
     } finally {
       saving = false;
       updateUI();
-      if (revision !== saveRevision) scheduleSave();
     }
   }
 
   editor.addEventListener('input', () => {
     revision++;
-    lastEditAt = Date.now();
     saveFailure = '';
     updateUI();
-    scheduleSave();
   });
   saveButton.addEventListener('click', savePrompt);
   reloadButton.addEventListener('click', loadPrompt);
