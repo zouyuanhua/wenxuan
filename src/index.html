@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ed">
+  <meta name="description" content="问玄：三枚铜钱，轻摇六次。一摇一爻，自下而上，静观本卦与变卦。支持本地离线使用。">
+  <title>问玄 · 一念起，六爻生</title>
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOSIgZmlsbD0iIzk3NDgzZCIvPjxwYXRoIGQ9Ik05IDExaDIyTTkgMjBoOW00IDBoOU05IDI5aDIyIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmY3ZTkiIHN0cm9rZS13aWR0aD0iMyIvPjwvc3ZnPgo=" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/hexagram.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="coin-gold" x1="8" y1="6" x2="55" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#efd58f"/><stop offset=".48" stop-color="#d5b468"/><stop offset="1" stop-color="#b48b40"/></linearGradient>
+      <linearGradient id="coin-edge" x1="8" y1="5" x2="55" y2="59" gradientUnits="userSpaceOnUse"><stop stop-color="#fff0ba"/><stop offset="1" stop-color="#a47a36"/></linearGradient>
+      <!-- Both the face and the lower edge have the same real square cutout. -->
+      <symbol id="coin-shell" viewBox="0 0 64 64">
+        <path fill="#80602d" fill-rule="evenodd" d="M32 5a28.5 28.5 0 1 1 0 57 28.5 28.5 0 0 1 0-57ZM24 24H40V40H24Z"/>
+        <path fill="url(#coin-gold)" fill-rule="evenodd" d="M32 3a29 29 0 1 1 0 58 29 29 0 0 1 0-58ZM24 24H40V40H24Z"/>
+        <circle cx="32" cy="32" r="28.4" fill="none" stroke="#916b2f" stroke-width=".8"/>
+        <circle cx="32" cy="32" r="26.7" fill="none" stroke="url(#coin-edge)" stroke-width="1.2"/>
+        <circle cx="32" cy="32" r="24.3" fill="none" stroke="#957435" stroke-opacity=".6" stroke-width=".8"/>
+        <path d="M23.5 23.5H40.5V40.5H23.5Z" fill="none" stroke="#80602d" stroke-width=".9" stroke-linejoin="miter"/>
+        <path d="M24.5 23.5H40.5V40.5" fill="none" stroke="#fae3a4" stroke-width=".75" stroke-linecap="butt"/>
+      </symbol>
+      <symbol id="coin-front" viewBox="0 0 64 64">
+        <use href="#coin-shell" width="64" height="64"/>
+        <g fill="#503c18" font-size="12" font-family="'Songti SC',SimSun,serif" font-weight="700" text-anchor="middle"><text x="32" y="19.5">乾</text><text x="48" y="36.5">隆</text><text x="32" y="55">通</text><text x="16" y="36.5">寶</text></g>
+      </symbol>
+      <symbol id="coin-back" viewBox="0 0 64 64">
+        <use href="#coin-shell" width="64" height="64"/>
+        <g stroke="#574019" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M15 22v19m-3-15 6-3m-6 10 6-4m-6 11 6-4M49 22v19m-3-17 6 3m-6 3 6 3m-6 3 6 3"/><path d="M27 15h10m-8-3 3 3-3 3m-2 31h10m-2-3-3 3 3 3" stroke-width="1.35"/></g>
+      </symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="site-header">
+    <a class="brand" href="#question-input" aria-label="问玄，返回起卦问题">
+      <span class="brand-seal" aria-hidden="true"><svg viewBox="0 0 30 30"><path d="M6 7h18M6 15h7m4 0h7M6 23h18"/></svg></span>
+      <span class="brand-name">问玄</span><span class="brand-divider"></span><span class="brand-note">以静观变</span>
+    </a>
+    <button class="method-button" id="open-method" type="button" aria-haspopup="dialog"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4.5h5a3 3 0 0 1 2 1 3 3 0 0 1 2-1h5v11h-5a3 3 0 0 0-2 1 3 3 0 0 0-2-1H3Z M10 5.5v11"/></svg>起卦方法</button>
+  </header>
+
+  <main>
+    <section class="question-section" id="question-section" aria-label="起卦问题">
+      <form class="question-form" id="question-form">
+        <div class="question-heading"><label class="question-label" for="question-input">所问之事</label><span class="question-state" id="question-state">尚未锁定</span></div>
+        <textarea class="question-input" id="question-input" name="question" rows="2" maxlength="2000" placeholder="请输入你此刻想问的问题…" aria-describedby="question-help" required></textarea>
+        <div class="question-footer">
+          <p class="question-help" id="question-help" role="status" aria-live="polite">锁定后不可修改，确定后即可起卦。</p>
+          <button class="lock-question" id="lock-question" type="submit" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4.5" y="8.5" width="11" height="8" rx="1.7"/><path d="M6.5 8.5V6a3.5 3.5 0 0 1 7 0v2.5M10 12v1.5"/></svg><span id="lock-question-label">确认所问</span></button>
+        </div>
+      </form>
+    </section>
+
+    <section class="casting-card" aria-labelledby="casting-title">
+      <div class="card-heading"><h2 id="casting-title">三钱起卦</h2><span class="direction-note">已成 <span id="cast-progress">0 / 6 爻</span></span></div>
+      <div class="coin-stage is-awaiting" id="coin-stage">
+        <p class="stage-kicker" id="stage-kicker">待锁定问题</p>
+        <button class="coin-control" id="coin-control" type="button" aria-label="请先锁定问题后再起卦" aria-describedby="coin-hint" disabled></button>
+        <p class="coin-hint" id="coin-hint">先锁定上方问题，再开始摇卦</p>
+        <div class="progress-steps" id="progress-steps" aria-hidden="true"><span class="step-dot"></span><span class="step-dot"></span><span class="step-dot"></span><span class="step-dot"></span><span class="step-dot"></span><span class="step-dot"></span></div>
+        <p class="cast-status" id="cast-status" role="status" aria-live="polite">锁定问题后，三枚铜钱同摇成爻。</p>
+      </div>
+      <div class="record-heading"><h3>六爻记录</h3><span>自下而上，逐爻成卦</span></div>
+      <div class="column-headings" aria-hidden="true"><span>爻位</span><span>本次钱象</span><span>阴阳爻象</span></div>
+      <div class="coin-rows" id="coin-rows" aria-label="六次摇卦记录，上爻在上，初爻在下"></div>
+    </section>
+
+    <div class="interpret-action">
+      <button class="interpret-button" id="interpret-button" type="button" aria-controls="result-section" aria-expanded="false" disabled><svg class="interpret-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h5a4 4 0 0 1 3 1.5A4 4 0 0 1 15 5h5v14h-5a4 4 0 0 0-3 1.5A4 4 0 0 0 9 19H4ZM12 6.5v14"/></svg><span id="interpret-label">解卦</span><svg class="interpret-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow"/></svg></button>
+      <p class="interpret-hint" id="interpret-hint" role="status" aria-live="polite">六爻齐备后，即可解卦</p>
+    </div>
+
+    <section class="result-section" id="result-section" aria-labelledby="result-title" tabindex="-1" hidden>
+      <div class="section-heading"><h2 id="result-title">卦成 · 观象</h2><span id="moving-count"></span></div>
+      <div class="result-pair">
+        <article class="hexagram-result"><div class="result-kicker">本 卦 <span>此刻之象</span></div><div class="hexagram-body"><div class="hexagram-lines" id="primary-lines" aria-hidden="true"></div><div class="hexagram-description"><p class="hexagram-number" id="primary-number"></p><h3 id="primary-name"></h3><p class="trigram-names" id="primary-trigrams"></p></div></div></article>
+        <span class="result-arrow" aria-hidden="true"><svg><use href="#icon-arrow"/></svg></span>
+        <article class="hexagram-result changed-result"><div class="result-kicker">变 卦 <span>变化之象</span></div><div class="hexagram-body"><div class="hexagram-lines" id="changed-lines" aria-hidden="true"></div><div class="hexagram-description"><p class="hexagram-number" id="changed-number"></p><h3 id="changed-name"></h3><p class="trigram-names" id="changed-trigrams"></p></div></div></article>
+      </div>
+      <p class="change-explanation" id="change-explanation"></p>
+      <article class="ai-reading" id="ai-reading" aria-labelledby="reading-title" hidden>
+        <div class="reading-heading"><h3 id="reading-title">解卦 · 回应所问</h3><span class="reading-state" id="reading-state" role="status" aria-live="polite">解读中</span></div>
+        <p class="reading-question" id="reading-question"></p>
+        <div class="reading-status" id="reading-status" role="status" aria-live="polite"><span class="reading-spinner" aria-hidden="true"></span><span id="reading-status-text">正在结合所问与卦象解读，请稍候…</span></div>
+        <div class="reading-content" id="reading-content" hidden></div>
+        <p class="reading-error" id="reading-error" role="alert" hidden></p>
+        <a class="reading-service-link" id="reading-service-link" href="http://127.0.0.1:3000" hidden>打开本地服务页面</a>
+      </article>
+    </section>
+
+    <footer class="site-footer"><span class="footer-line"></span><span>心静，方见万象。<a class="prompt-link" href="prompt.html" target="_blank" rel="noopener"> · 提示词配置</a></span><span class="footer-line"></span></footer>
+  </main>
+
+  <dialog class="centering-dialog" id="centering-dialog" aria-labelledby="centering-title" aria-describedby="centering-description">
+    <button class="centering-close" id="close-centering" type="button" aria-label="关闭静心提示"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
+    <p class="centering-eyebrow">起卦之前</p>
+    <div class="centering-emblem" aria-hidden="true"><span>静</span></div>
+    <h2 id="centering-title">静心凝神，专注所问</h2>
+    <p class="centering-description" id="centering-description">请放下杂念，在心中默念所问之事。<br>待心绪平稳，再轻点铜钱起卦。</p>
+    <blockquote class="centering-question" id="centering-question"></blockquote>
+    <button class="centering-confirm" id="confirm-centering" type="button" autofocus>我已静心，开始起卦</button>
+  </dialog>
+
+  <dialog id="method-dialog" aria-labelledby="method-title">
+    <div class="dialog-heading"><span class="eyebrow">三钱起卦</span><button class="close-button" id="close-method" type="button" aria-label="关闭起卦方法"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div>
+    <h2 id="method-title">静心一念，六爻成卦。</h2>
+    <ol class="method-steps"><li><span>01</span><div><h3>写下并锁定问题</h3><p>在上方输入想问的问题，确定后点击「确认所问」。锁定后问题不可修改，铜钱即可开始摇卦。</p></div></li><li><span>02</span><div><h3>三枚铜钱，轻摇六次</h3><p>轻点任意一枚铜钱，三钱同时翻转，落成一爻。同样的三枚铜钱重复摇六次，记录从最下方初爻依次向上，直到上爻。</p></div></li><li><span>03</span><div><h3>观本卦，知其变</h3><p>阳爻为一条实线，阴爻为两段断线。动爻以朱砂红标记，阴阳互换后形成变卦。六爻成卦后铜钱锁定，点击「解卦」查看本卦、变卦与动爻说明。</p></div></li></ol>
+    <div class="method-note"><svg aria-hidden="true" viewBox="0 0 64 64"><use href="#coin-front"/></svg><p><strong>字面</strong>有「乾隆通寶」四字<br><strong>背面</strong>为纹饰图案</p></div>
+    <button class="dialog-confirm" id="confirm-method" type="button">明白了，静心起卦</button>
+  </dialog>
+</body>
+</html>

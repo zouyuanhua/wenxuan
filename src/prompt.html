@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ed">
+  <meta name="description" content="问玄提示词配置：编辑解卦提示词，自动保存，并用当前草稿在线调试。">
+  <title>问玄 · 提示词配置</title>
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOSIgZmlsbD0iIzk3NDgzZCIvPjxwYXRoIGQ9Ik05IDExaDIyTTkgMjBoOW00IDBoOU05IDI5aDIyIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmY3ZTkiIHN0cm9rZS13aWR0aD0iMyIvPjwvc3ZnPgo=" type="image/svg+xml">
+  <link rel="stylesheet" href="css/prompt.css">
+  <script src="js/hexagram.js" defer></script>
+  <script src="js/prompt.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="返回问玄起卦页面"><span class="brand-seal" aria-hidden="true"><svg viewBox="0 0 30 30"><path d="M6 7h18M6 15h7m4 0h7M6 23h18"/></svg></span><span class="brand-name">问玄</span><span class="brand-divider"></span><span class="brand-note">以静观变</span></a>
+    <a class="back-link" href="index.html"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15 10H5m4-4-4 4 4 4"/></svg>返回起卦</a>
+  </header>
+  <main class="settings-main">
+    <div class="page-heading"><p class="eyebrow">解 读 设 置</p><h1>解卦提示词</h1><p>让解读遵循你的思路。修改自动保存，每次解卦读取最新配置，无需重启。</p></div>
+    <aside class="service-guide" id="service-guide" role="status" hidden><strong>请通过本地服务打开</strong><p>先启动服务，再进入配置页面。直接打开 HTML 文件时，无法保存配置或在线调试。</p><a href="http://127.0.0.1:3000/prompt.html">打开本地提示词配置</a></aside>
+    <div class="workspace">
+      <section class="panel editor-panel" aria-labelledby="editor-title">
+        <div class="panel-heading"><div><p class="section-number">01 / 提示词</p><h2 id="editor-title">写下解读的方式</h2></div><span class="save-state" id="prompt-status" data-state="loading" role="status" aria-live="polite">正在加载</span></div>
+        <label class="field-label" for="prompt-editor">系统提示词</label>
+        <textarea id="prompt-editor" class="prompt-editor" maxlength="20000" rows="23" placeholder="正在读取当前提示词，你也可以先在此输入草稿…" spellcheck="false" aria-describedby="prompt-help prompt-error"></textarea>
+        <div class="editor-meta"><span id="prompt-help">停止输入后自动保存，无需重启服务。</span><span class="character-count" id="prompt-count">0 / 20,000</span></div>
+        <p class="message error-message" id="prompt-error" role="alert" hidden></p>
+        <div class="editor-actions"><p id="saved-time">保存后用于此后发起的解卦。</p><div class="action-group"><button class="text-button" id="reload-prompt" type="button" hidden>重新加载</button><button class="secondary-button" id="save-prompt" type="button" disabled>立即保存</button></div></div>
+      </section>
+      <section class="panel debug-panel" aria-labelledby="debug-title">
+        <div class="panel-heading"><div><p class="section-number">02 / 在线调试</p><h2 id="debug-title">试一卦，观其解</h2></div><span class="draft-label">使用当前草稿</span></div>
+        <p class="panel-description">调试使用当前草稿，可在保存前试用。模型同时收到问题、本卦、变卦、动爻与六爻记录。</p>
+        <form id="debug-form">
+          <label class="field-label" for="debug-question">所问之事</label>
+          <textarea id="debug-question" class="debug-question" rows="3" maxlength="2000" required>当前这件事，宜如何审时度势、稳步推进？</textarea>
+          <div class="line-heading"><span class="field-label">六爻四象</span><span>初爻 → 上爻</span></div>
+          <div class="line-pickers" id="debug-lines"></div>
+          <p class="line-help">按自下而上的顺序输入，老阳、老阴为动爻。</p>
+          <button class="primary-button" id="debug-button" type="submit" disabled><span id="debug-button-label">开始调试</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5"/></svg></button>
+          <p class="debug-status" id="debug-status" role="status" aria-live="polite">准备好问题和六爻后，开始调试。</p>
+        </form>
+      </section>
+    </div>
+    <section class="panel debug-output" id="debug-output" aria-labelledby="output-title" hidden>
+      <div class="panel-heading"><div><p class="section-number">调 试 结 果</p><h2 id="output-title">回应所问</h2></div><span class="output-state" id="debug-output-state" role="status" aria-live="polite"></span></div>
+      <p class="output-question" id="debug-output-question"></p>
+      <div class="debug-hexagrams" id="debug-hexagrams" hidden>
+        <article class="debug-hexagram"><div class="hexagram-lines" id="debug-primary-lines" aria-hidden="true"></div><div><p>本卦</p><h3 id="debug-primary-name"></h3></div></article>
+        <span class="hexagram-arrow" aria-hidden="true">→</span>
+        <article class="debug-hexagram"><div class="hexagram-lines" id="debug-changed-lines" aria-hidden="true"></div><div><p>变卦</p><h3 id="debug-changed-name"></h3></div></article>
+        <p class="moving-lines" id="debug-moving-lines"></p>
+      </div>
+      <p class="message error-message" id="debug-error" role="alert" hidden></p>
+      <div class="debug-content" id="debug-content" hidden></div>
+      <p class="output-note">本次调试使用点击时的问题、六爻和提示词草稿。</p>
+    </section>
+    <footer class="site-footer"><span></span>心静，方见万象。<span></span></footer>
+  </main>
+</body>
+</html>
