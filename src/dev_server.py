@@ -24,6 +24,9 @@ STATIC = {
     "/css/style.css": "css/style.css", "/css/prompt.css": "css/prompt.css",
     "/js/app.js": "js/app.js", "/js/hexagram.js": "js/hexagram.js",
     "/js/prompt.js": "js/prompt.js", "/js/ask-data.js": "js/ask-data.js",
+    "/css/paipan.css": "css/paipan.css",
+    "/js/liuyao.js": "js/liuyao.js", "/js/paipan.js": "js/paipan.js",
+    "/js/vendor/lunar.min.js": "js/vendor/lunar.min.js",
 }
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
                  ".js": "application/javascript; charset=utf-8"}

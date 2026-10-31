@@ -34,9 +34,14 @@ STATIC_FILES = {
     b"/css/style.css": ("css/style.css", "text/css; charset=utf-8"),
     b"/js/app.js": ("js/app.js", "text/javascript; charset=utf-8"),
     b"/js/hexagram.js": ("js/hexagram.js", "text/javascript; charset=utf-8"),
+    b"/js/ask-data.js": ("js/ask-data.js", "text/javascript; charset=utf-8"),
     b"/prompt.html": ("prompt.html", "text/html; charset=utf-8"),
     b"/css/prompt.css": ("css/prompt.css", "text/css; charset=utf-8"),
     b"/js/prompt.js": ("js/prompt.js", "text/javascript; charset=utf-8"),
+    b"/css/paipan.css": ("css/paipan.css", "text/css; charset=utf-8"),
+    b"/js/liuyao.js": ("js/liuyao.js", "text/javascript; charset=utf-8"),
+    b"/js/paipan.js": ("js/paipan.js", "text/javascript; charset=utf-8"),
+    b"/js/vendor/lunar.min.js": ("js/vendor/lunar.min.js", "text/javascript; charset=utf-8"),
 }
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
