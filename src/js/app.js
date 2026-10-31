@@ -12,7 +12,7 @@
   const control = document.getElementById('coin-control');
   const stage = document.getElementById('coin-stage');
   const stageKicker = document.getElementById('stage-kicker');
-  const hint = document.getElementById('coin-hint');
+  const hint = document.getElementById('coin-hint-text');
   const rowsElement = document.getElementById('coin-rows');
   const progress = document.getElementById('cast-progress');
   const steps = Array.from(document.querySelectorAll('#progress-steps .step-dot'));
@@ -382,6 +382,7 @@
     interpretButton.setAttribute('aria-expanded', String(!resultSection.hidden));
     interpretHint.textContent = !complete ? '六爻齐备后，即可解卦' : interpreting ? '正在结合所问与卦象解读，请稍候' : interpretation !== null ? '解读已完成，可再次查看' : interpretationFailed ? '解读暂未完成，可以重试' : '六爻已成，点击解卦观象';
     stage.classList.toggle('is-awaiting', !questionLocked || preparing);
+    stage.classList.toggle('is-ready', !control.disabled);
     stage.classList.toggle('is-complete', complete);
     rows.forEach((row, index) => {
       row.element.classList.toggle('is-current', questionLocked && !preparing && !complete && index === lines.length);
@@ -392,7 +393,7 @@
     });
     if (!casting) {
       stageKicker.textContent = !questionLocked ? '待诚心发问' : preparing ? '疏文已焚' : complete ? '六爻已成 · 静观其变' : '第' + numerals[lines.length] + '摇 · ' + positions[lines.length];
-      hint.textContent = !questionLocked ? '先在问事台抽签写下所问' : preparing ? '专注所问，静候起卦' : complete ? '六爻已成，可点击下方「解卦」' : (lines.length ? '再点铜钱，摇出' : '轻点铜钱，摇出') + positions[lines.length];
+      hint.textContent = !questionLocked ? '先在问事台抽签写下所问' : preparing ? '专注所问，静候起卦' : complete ? '六爻已成，可点击下方「解卦」' : (lines.length ? '再点任意铜钱，摇出' : '点击任意铜钱，摇出') + positions[lines.length];
     }
     control.setAttribute('aria-label', !questionLocked ? '请先在问事台诚心发问' : preparing ? '疏文已焚，静候起卦' : complete ? '六爻已成，铜钱已锁定' : '第' + (lines.length + 1) + '次，点击三枚铜钱摇出' + positions[lines.length]);
   }
