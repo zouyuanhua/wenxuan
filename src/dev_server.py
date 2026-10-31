@@ -22,8 +22,11 @@ ROOT = Path(__file__).resolve().parent
 STATIC = {
     "/": "index.html", "/index.html": "index.html", "/prompt.html": "prompt.html",
     "/css/style.css": "css/style.css", "/css/prompt.css": "css/prompt.css",
+    "/css/paipan.css": "css/paipan.css",
     "/js/app.js": "js/app.js", "/js/hexagram.js": "js/hexagram.js",
     "/js/prompt.js": "js/prompt.js", "/js/ask-data.js": "js/ask-data.js",
+    "/js/vendor/lunar.min.js": "js/vendor/lunar.min.js",
+    "/js/liuyao.js": "js/liuyao.js", "/js/paipan.js": "js/paipan.js",
 }
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
                  ".js": "application/javascript; charset=utf-8"}

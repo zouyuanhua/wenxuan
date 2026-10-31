@@ -3,6 +3,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 import json
+import logging
 import math
 import os
 from pathlib import Path
@@ -21,6 +22,7 @@ from gua_classics import classics_grounding, classics_summary
 from prompt_config import MAX_PROMPT_LENGTH, PromptConfigError, PromptStore, validate_prompt
 
 APP_DIR = Path(__file__).resolve().parent
+logger = logging.getLogger(__name__)
 MODEL = "deepseek-flash"
 UPSTREAM_URL = "https://api.deepseek.com/chat/completions"
 MAX_REQUEST_BYTES = 32 * 1024
@@ -32,8 +34,13 @@ STATIC_FILES = {
     b"/": ("index.html", "text/html; charset=utf-8"),
     b"/index.html": ("index.html", "text/html; charset=utf-8"),
     b"/css/style.css": ("css/style.css", "text/css; charset=utf-8"),
+    b"/css/paipan.css": ("css/paipan.css", "text/css; charset=utf-8"),
     b"/js/app.js": ("js/app.js", "text/javascript; charset=utf-8"),
     b"/js/hexagram.js": ("js/hexagram.js", "text/javascript; charset=utf-8"),
+    b"/js/ask-data.js": ("js/ask-data.js", "text/javascript; charset=utf-8"),
+    b"/js/vendor/lunar.min.js": ("js/vendor/lunar.min.js", "text/javascript; charset=utf-8"),
+    b"/js/liuyao.js": ("js/liuyao.js", "text/javascript; charset=utf-8"),
+    b"/js/paipan.js": ("js/paipan.js", "text/javascript; charset=utf-8"),
     b"/prompt.html": ("prompt.html", "text/html; charset=utf-8"),
     b"/css/prompt.css": ("css/prompt.css", "text/css; charset=utf-8"),
     b"/js/prompt.js": ("js/prompt.js", "text/javascript; charset=utf-8"),
@@ -182,6 +189,7 @@ async def interpret(client, api_key, data, system_prompt):
     async with client.stream("POST", UPSTREAM_URL, json=payload,
                              headers={"Authorization": f"Bearer {api_key}"}) as response:
         if response.status_code != 200:
+            logger.warning("DeepSeek request rejected: status=%d", response.status_code)
             message = ("解卦服务繁忙，请稍后重试。" if response.status_code == 429
                        else "解卦服务暂不可用，请稍后重试。")
             raise APIError(502, "UPSTREAM_UNAVAILABLE", message)
@@ -227,12 +235,14 @@ async def interpret_until_disconnect(request, client, api_key, data, timeout_sec
     work = asyncio.create_task(interpret(client, api_key, data, system_prompt))
     watch = asyncio.create_task(disconnected())
     try:
-        # Unlike per-read timeouts, this deadline includes the entire response body.
-        async with asyncio.timeout(timeout_seconds):
-            done, _ = await asyncio.wait((work, watch), return_when=asyncio.FIRST_COMPLETED)
-            if watch in done:
-                raise APIError(499, "CLIENT_DISCONNECTED", "请求已中断，请重试。")
-            return await work
+        # wait_for supports Python 3.10 and covers the entire response body.
+        done, _ = await asyncio.wait_for(
+            asyncio.wait((work, watch), return_when=asyncio.FIRST_COMPLETED),
+            timeout=timeout_seconds,
+        )
+        if watch in done:
+            raise APIError(499, "CLIENT_DISCONNECTED", "请求已中断，请重试。")
+        return await work
     finally:
         for task in (work, watch):
             if not task.done():
@@ -325,12 +335,13 @@ def create_app(api_key=None, transport=None, timeout_seconds=60, prompt_path=Non
                 raise APIError(503, "SERVICE_NOT_CONFIGURED", "尚未配置解卦服务，请先完成服务端配置。")
             try:
                 result = await interpret_until_disconnect(request, application.state.client, key, data, timeout_seconds, prompt)
-            except (TimeoutError, httpx.TimeoutException):
+            except (TimeoutError, asyncio.TimeoutError, httpx.TimeoutException):
                 raise APIError(504, "UPSTREAM_TIMEOUT", "解卦等待超时，请稍后重试。") from None
             except APIError:
                 raise
-            except Exception:
-                # Provider diagnostics may contain credentials; never return or log them.
+            except Exception as error:
+                # Only log the exception class; provider details may contain credentials.
+                logger.warning("DeepSeek request failed: type=%s", type(error).__name__)
                 raise APIError(502, "UPSTREAM_FAILED", "解卦服务暂不可用，请稍后重试。") from None
             return JSONResponse(result)
         except APIError as error:

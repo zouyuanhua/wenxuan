@@ -146,15 +146,23 @@
   if (window.AskData) atmosphere.textContent = window.AskData.atmosphereText(new Date());
 
   function refreshValidity() {
+    if (lockedQuestion !== null) return;
+    const data = window.AskData;
     const length = codePointLength(questionInput.value.trim());
     askCount.textContent = length + ' / ' + maxQuestionLength;
-    askCount.classList.toggle('is-over', length >= maxQuestionLength);
-    const valid = selectedCategory !== null && length >= minQuestionLength && length <= maxQuestionLength;
-    lockQuestion.disabled = !valid || lockedQuestion !== null;
+    askCount.classList.toggle('is-over', length > maxQuestionLength);
+    const valid = !!data && selectedCategory !== null && length >= minQuestionLength && length <= maxQuestionLength;
+    lockQuestion.disabled = !valid;
+    if (!data) questionHelp.textContent = '问事台数据未加载，请刷新页面重试。';
+    else if (selectedCategory === null) questionHelp.textContent = data.COPY.noCategory;
+    else if (!length) questionHelp.textContent = data.COPY.defaultHelp;
+    else if (length < minQuestionLength) questionHelp.textContent = data.COPY.tooShort + '（还需 ' + (minQuestionLength - length) + ' 字）';
+    else if (length > maxQuestionLength) questionHelp.textContent = data.COPY.tooLong;
+    else questionHelp.textContent = data.COPY.validHelp;
+    lockQuestion.title = valid ? '诚心已备，可以起卦。' : questionHelp.textContent;
     if (valid) {
       questionSection.classList.remove('has-error');
       questionInput.removeAttribute('aria-invalid');
-      questionHelp.textContent = window.AskData ? window.AskData.COPY.validHelp : '分类已定，疏文已备。';
     }
   }
 
@@ -214,8 +222,11 @@
     });
     subsBox.appendChild(freeChip);
     subsBox.hidden = false;
-    if (switched) questionHelp.textContent = window.AskData.COPY.switchCategory;
     refreshValidity();
+    if (switched) {
+      questionHelp.textContent = window.AskData.COPY.switchCategory;
+      lockQuestion.title = questionHelp.textContent;
+    }
   }
 
   if (window.AskData) {
@@ -235,12 +246,9 @@
       button.addEventListener('click', () => selectCategory(category, button));
       categoriesBox.appendChild(button);
     });
-  } else {
-    lockQuestion.disabled = true;
-    questionHelp.textContent = '问事台数据未加载，请刷新页面重试。';
   }
 
-  questionInput.addEventListener('input', () => {
+  function handleQuestionInput() {
     if (lockedQuestion !== null) {
       questionInput.value = lockedQuestion;
       return;
@@ -248,14 +256,19 @@
     if (questionSection.classList.contains('has-error')) {
       questionSection.classList.remove('has-error');
       questionInput.removeAttribute('aria-invalid');
-      questionHelp.textContent = window.AskData ? window.AskData.COPY.defaultHelp : '';
     }
     refreshValidity();
-  });
+  }
+
+  questionInput.addEventListener('input', handleQuestionInput);
+  questionInput.addEventListener('change', handleQuestionInput);
+  window.addEventListener('pageshow', handleQuestionInput);
+  refreshValidity();
 
   questionForm.addEventListener('submit', event => {
     event.preventDefault();
     if (lockedQuestion !== null) return;
+    if (!window.AskData) { failAsk('问事台数据未加载，请刷新页面重试。'); return; }
     const question = questionInput.value.trim();
     const length = codePointLength(question);
     if (selectedCategory === null) { failAsk(window.AskData.COPY.noCategory); return; }
@@ -269,6 +282,7 @@
     lockQuestionLabel.textContent = '疏文已焚 · 静候起卦';
     questionState.textContent = '已诚心';
     questionHelp.textContent = window.AskData.COPY.lockedHelp;
+    lockQuestion.title = window.AskData.COPY.lockedHelp;
     questionInput.removeAttribute('aria-invalid');
     questionSection.classList.remove('has-error');
     questionSection.classList.add('is-locked');
