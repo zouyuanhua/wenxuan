@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>问玄 · PRD 产品需求文档</title>
+<style>
+  @page { size: A4; margin: 14mm 14mm 14mm 14mm; }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #2563eb; --primary-light: #eff6ff; --text: #1a1a1a;
+    --muted: #555; --faint: #999; --border: #d1d5db; --row-stripe: #f9fafb;
+    --hint-bg: #f8fafc; --hint-border: #e2e8f0; --code-bg: #f8f9fb;
+    --check-bg: #ecfdf5; --check-border: #a7f3d0;
+  }
+
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 10pt; line-height: 1.65; color: var(--text);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  @media screen { body { background: #e8ecf1; padding: 6mm 0; } }
+
+  .doc {
+    max-width: 195mm; margin: 0 auto; background: #fff; padding: 14mm 16mm;
+  }
+  @media screen { .doc { box-shadow: 0 2px 12px rgba(0,0,0,.08); margin-bottom: 8mm; } }
+
+  .cover {
+    text-align: center; padding: 15mm 0 12mm;
+    border-bottom: 4px solid var(--primary); margin-bottom: 8mm;
+  }
+  .cover .badge {
+    display: inline-block; background: var(--primary); color: #fff;
+    font-size: 9pt; font-weight: 700; padding: 2px 14px; border-radius: 3px;
+    letter-spacing: 0.06em; margin-bottom: 5mm;
+  }
+  .cover h1 { font-size: 20pt; font-weight: 800; margin-bottom: 3mm; }
+  .cover .subtitle { font-size: 11pt; color: var(--muted); }
+  .cover .meta { font-size: 9pt; color: var(--faint); margin-top: 3mm; }
+
+  .sec { margin-bottom: 7mm; }
+  .sec h2 {
+    font-size: 13pt; font-weight: 700; color: var(--primary);
+    border-left: 4px solid var(--primary); padding-left: 7px; margin-bottom: 3mm;
+  }
+  .sec h3 { font-size: 10.5pt; font-weight: 700; margin: 4mm 0 2mm; color: #374151; }
+  .sec h4 { font-size: 10pt; font-weight: 700; margin: 3mm 0 1.5mm; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0; }
+  th, td {
+    padding: 2mm 3mm; text-align: left; border: 1px solid var(--border);
+    font-size: 9.5pt; vertical-align: top;
+  }
+  th { background: #f1f5f9; font-weight: 700; font-size: 9pt; text-align: center; }
+
+  pre, code { font-family: "SF Mono", "Fira Code", "Consolas", "Monaco", monospace; font-size: 8.5pt; line-height: 1.5; }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3mm 4mm; overflow-x: auto; margin: 2mm 0; white-space: pre;
+  }
+
+  .feat-card {
+    background: #fafbfc; border: 1px solid var(--border); border-radius: 5px;
+    padding: 3mm 4mm; margin-bottom: 3mm;
+  }
+  .feat-card h4 { color: var(--primary); margin-bottom: 1.5mm; font-size: 10.5pt; }
+  .feat-card table { margin: 0; }
+  .feat-card td:first-child {
+    font-weight: 600; white-space: nowrap; width: 22mm;
+    font-size: 9pt; color: var(--muted);
+  }
+  .feat-card td { border: none; padding: 1.2mm 2mm; background: none; }
+  .feat-card tr { border-bottom: 1px solid #eee; }
+  .feat-card tr:last-child { border-bottom: none; }
+
+  .story-blk {
+    background: var(--primary-light); border: 1px solid #bfdbfe; border-radius: 4px;
+    padding: 2mm 4mm; margin: 2mm 0; font-size: 9.5pt;
+  }
+
+  .footer {
+    text-align: center; font-size: 8pt; color: var(--faint);
+    margin-top: 8mm; padding-top: 3mm; border-top: 1px solid var(--border);
+  }
+
+  .page-break { page-break-before: always; }
+
+  @media print {
+    body { background: #fff; }
+    .doc { box-shadow: none; padding: 10mm 12mm; max-width: 100%; }
+    h2, h3, h4 { page-break-after: avoid; }
+    pre { page-break-inside: avoid; }
+    .feat-card { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+<!-- ==================== 封面 ==================== -->
+<div class="cover">
+  <div class="badge">产品需求文档 · PRD</div>
+  <h1>问玄 · 产品需求文档</h1>
+  <div class="subtitle">心有惑，一卦问玄 —— 基于周易卦象的 AI 问事应用</div>
+  <p class="meta">版本：v1.0 &nbsp;|&nbsp; 日期：2026-10-31 &nbsp;|&nbsp; 小组：问玄项目组（zouyuanhua / fallavor）</p>
+</div>
+
+<!-- ==================== 1. 产品概述 ==================== -->
+<div class="sec">
+  <h2>1. 产品概述</h2>
+
+  <h3>1.1 一句话定义</h3>
+  <p style="font-size:11pt; padding:2mm 0;"><strong>问玄</strong>是一个面向 20-40 岁决策焦虑人群的 AI 卦象问事应用：用户写下困惑、摇卦六次，即可获得基于《周易》原文、由 AI 生成的白话解读与可执行建议——引文全部来自典籍数据库，绝不编造。</p>
+
+  <h3>1.2 要解决的问题</h3>
+  <table>
+    <tr><th style="width:45%;">现状痛点</th><th>解法</th></tr>
+    <tr><td>人工算命门槛高、价格贵、质量参差不齐</td><td>AI 标准化解卦：结构化输出、低成本、随时可用</td></tr>
+    <tr><td>套壳 AI 算命排盘常错，术数逻辑靠模型瞎算</td><td>排盘由确定性代码完成（起卦/纳甲/变卦 100% 准确），LLM 只负责把结果讲成人话</td></tr>
+    <tr><td>AI 解读引用的"古籍原文"多为编造，不可验证</td><td>接入 64 卦典籍数据库，解读引用的卦辞爻辞逐字来自注入的原文，并在卦卡上展示供用户核对</td></tr>
+    <tr><td>用户要的不是"预测未来"，而是决策参考与情绪出口</td><td>定位文化娱乐：给趋势判断 + 可执行建议，明确非宿命论断言</td></tr>
+    <tr><td>传统术数脱离当代语境（古人问求官，今人问 offer）</td><td>"古卦今译"分类体系：8 大类 30+ 现代场景问题模板，一键填入</td></tr>
+  </table>
+
+  <h3>1.3 目标用户</h3>
+  <table>
+    <tr><th>用户角色</th><th>核心诉求</th><th>使用频率 / 付费意愿</th></tr>
+    <tr><td>决策焦虑的都市白领（25-35）</td><td>换工作、感情、重大消费抉择时，需要一次郑重其事的参考仪式</td><td>每月 1-4 次 / 中（单次付费可接受）</td></tr>
+    <tr><td>在校学生（18-24）</td><td>考试、升学、恋爱困惑，想要有趣的自我探索</td><td>中高频 / 低（社交传播为主）</td></tr>
+    <tr><td>传统文化爱好者</td><td>对周易卦象有兴趣，希望有严谨的排盘与原文</td><td>低频 / 高（愿意为深度内容付费）</td></tr>
+  </table>
+
+  <h3>1.4 产品愿景</h3>
+  <p>让每一次迷茫都有一场郑重其事、有典可依的对话——把《周易》变成当代人用得起、信得过的决策陪伴。</p>
+
+  <h3>1.5 产品边界</h3>
+  <p><strong>本期做：</strong></p>
+  <p style="padding-left:4mm;">· 问事台（分类/子项模板/疏文）+ 摇卦（六爻纳甲规则）+ AI 解卦（典籍 grounding）+ 追问循环（3 次上限）</p>
+  <p style="padding-left:4mm;">· 双端交付：H5/Web（含预览服务）+ 微信小程序</p>
+  <p><strong>本期不做：</strong></p>
+  <p style="padding-left:4mm;">· 登录注册、会员支付、社区、真人解卦师入驻、塔罗/八字、每日运势</p>
+  <p><strong>明确声明：</strong>本产品为传统文化娱乐应用，不预测命运，不提供医疗/法律/投资/婚姻专业建议，不提供付费改运消灾服务。</p>
+</div>
+
+<!-- ==================== 2. 用户故事与使用场景 ==================== -->
+<div class="sec">
+  <h2>2. 用户故事与使用场景</h2>
+
+  <h3>2.1 核心用户故事</h3>
+
+  <div class="story-blk">
+    <p><strong>故事 1</strong></p>
+    <p>作为 <strong>面临换工作抉择的上班族</strong>，我想要 <strong>摇一卦并获得结合我所问之事的白话解读</strong>，</p>
+    <p>以便 <strong>在犹豫不决时获得一份有《周易》原文背书的参考，把心里的大石头变成可执行的小步</strong>。</p>
+  </div>
+  <div class="story-blk">
+    <p><strong>故事 2</strong></p>
+    <p>作为 <strong>对解读仍有疑问的用户</strong>，我想要 <strong>就同一卦象继续追问（最多 3 次）</strong>，</p>
+    <p>以便 <strong>把困惑挖得更深，而不必重新起卦、丢失已有的卦象上下文</strong>。</p>
+  </div>
+  <div class="story-blk">
+    <p><strong>故事 3</strong></p>
+    <p>作为 <strong>解卦服务本身（AI 角色）</strong>，我想要 <strong>只依据服务端注入的《周易》原文进行解读</strong>，</p>
+    <p>以便 <strong>杜绝编造卦辞爻辞的幻觉，让每一条引文都可以被用户核对</strong>。</p>
+  </div>
+
+  <h3>2.2 核心使用流程</h3>
+  <pre>Step 1: 问事台        — 选分类、抽子项签（或自由来问），写下心事（5-200 字）
+Step 2: 诚心已备      — 疏文焚化转场，问题与分类锁定
+Step 3: 摇卦          — 三枚铜钱轻摇六次，逐爻升起，得本卦与变卦
+Step 4: 解卦          — 服务端查典籍数据库，AI 生成五段式白话解读（引文逐字可核对）
+Step 5: 追问          — 同卦最多追问 3 次；超限收尾"此卦已尽，建议心定后另择时再问"</pre>
+
+  <h3>2.3 典型使用场景</h3>
+  <p><strong>场景 A：offer 抉择</strong></p>
+  <p style="padding-left:4mm;">1. [用户] 手里两个机会犹豫不决，睡前打开了问玄</p>
+  <p style="padding-left:4mm;">2. 选「事业-求职面试」，模板自动填入"这个 offer 我能拿到吗?"，摇得天山遁、初爻动</p>
+  <p style="padding-left:4mm;">3. 系统给出解读，引用初九爻辞"潜龙，勿用"，建议先蛰伏观察、暂不表态</p>
+  <p style="padding-left:4mm;">4. 结果：用户追问"时机"，获得"待时机"的趋势判断与三条可执行建议，安然入睡</p>
+</div>
+
+<!-- ==================== 3. 功能需求 ==================== -->
+<div class="sec">
+  <h2>3. 功能需求</h2>
+
+  <h3>3.1 功能全景</h3>
+  <pre>问玄
+├── P0（MVP 核心，必须做）
+│   ├── 问事台     — 分类/子项模板/疏文校验(5-200字)/入戏微文案
+│   ├── 摇卦       — 三钱六爻；概率 12.5/12.5/37.5/37.5；动爻推导变卦
+│   ├── AI 解卦    — 典籍依据 grounding + 五段式解读 + 免责声明 100%
+│   └── 追问循环   — 同卦多轮，上限 3 次，超限收尾
+│
+├── P1（增强体验，做完 P0 再做）
+│   ├── 历史记录   — 问事/卦象/问答本地持久化（localStorage）
+│   ├── 分享海报   — 卦卡 + 专属卦纹图案
+│   └── 每日运势   — 黄历/节气签到钩子
+│
+├── P2（规模化，本轮不做）
+│   ├── 会员与支付 — 单次付费/订阅
+│   └── 塔罗/八字  — 扩展术数体系
+│
+└── 本期明确不做
+    ├── 医疗/投资/法律指令输出 — 原因：合规红线
+    └── 付费改运/消灾/开光     — 原因：封建迷信经营风险</pre>
+
+  <h3>3.2 P0 功能详述</h3>
+
+  <div class="feat-card">
+    <h4>F1：问事台（FR-01）</h4>
+    <table>
+      <tr><td>一句话描述</td><td>单屏完成"选分类 → 抽子项签 → 疏文确认"的三步问事，全程入戏微文案</td></tr>
+      <tr><td>输入</td><td>点选 8+1 分类之一；点子项签自动填入问题模板（可编辑）；或自由输入文本</td></tr>
+      <tr><td>处理逻辑</td><td>分类必选且选定后锁定；问题 5-200 字（码点计数）；模板填充与自由编辑并存；更换分类清空疏文并提示"再想想，换一事来问"</td></tr>
+      <tr><td>输出</td><td>合法的 {分类, 问题} 交给摇卦流程；氛围条按节气展示文案</td></tr>
+      <tr><td>异常处理</td><td>未选分类/空问题/不足 5 字/超 200 字分别给出入戏提示（"心事未落笔，如何起卦?"等）+ 抖动 + 震动，且不起卦</td></tr>
+      <tr><td>依赖</td><td>utils/ask-data.js（分类/签语/文案数据源）</td></tr>
+      <tr><td>验收标准</td><td>单屏完成三步、无跳页、首用到确认 ≤10 秒；A.4 微文案零系统腔；三种校验均拦截；分类锁定后无更换入口</td></tr>
+    </table>
+  </div>
+
+  <div class="feat-card">
+    <h4>F2：摇卦（FR-02）</h4>
+    <table>
+      <tr><td>一句话描述</td><td>三枚铜钱轻摇六次，逐爻升起得本卦/动爻/变卦，概率与手工摇钱完全一致</td></tr>
+      <tr><td>输入</td><td>用户点击铜钱（小程序支持后续扩展摇一摇）</td></tr>
+      <tr><td>处理逻辑</td><td>3 枚独立硬币各 50/50；一背二字=少阳、二背一字=少阴、三背=老阳(动)、三字=老阴(动)；六爻自下而上；动爻阴阳翻转推变卦；64 卦 King Wen 表查名</td></tr>
+      <tr><td>输出</td><td>结构化六爻数据（coins/name/yang/moving）+ 本卦/变卦描述（卦序号/全名/卦符/上下卦）</td></tr>
+      <tr><td>异常处理</td><td>引擎未加载提示刷新；单爻失败还原重试；非法钱象抛错</td></tr>
+      <tr><td>依赖</td><td>hexagram 引擎（Web/小程序/Python 三方同源）</td></tr>
+      <tr><td>验收标准</td><td>5 万+爻模拟分布与理论值偏差 ≤1%；64 卦名全量核对通过；同种子结果完全可复现；古籍卦例（乾→姤、乾全动→坤等）回归通过</td></tr>
+    </table>
+  </div>
+
+  <div class="feat-card">
+    <h4>F3：AI 解卦（FR-03/04，典籍 grounding）</h4>
+    <table>
+      <tr><td>一句话描述</td><td>服务端重算卦象 → 注入 64 卦典籍依据 → LLM 生成五段式白话解读，引文逐字可核对</td></tr>
+      <tr><td>输入</td><td>{question, lines:[{coins}×6], followup?}</td></tr>
+      <tr><td>处理逻辑</td><td>服务端 classify_coins 重算卦象（不信任前端术数）→ 按卦 id 查 64gua.json 构建【典籍依据】（本卦卦辞/大象 + 动爻爻辞/小象 + 变卦卦辞）→ system=提示词+典籍依据（追问时追加同卦约束），user=JSON 数据 → DeepSeek 生成 → 完整性校验</td></tr>
+      <tr><td>输出</td><td>五段式解读（卦象直读/核心矛盾/趋势判断/行动建议×3/典籍引证，400 字内）+ 免责声明 + 卦辞摘要（前端展示）</td></tr>
+      <tr><td>异常处理</td><td>上游超时 60s→504 可重试；响应不完整/超长→拒绝；API Key 永不回显；典籍库缺失→优雅降级为无 grounding</td></tr>
+      <tr><td>依赖</td><td>DeepSeek API；src/config/64gua.json；prompt.json（系统提示词）</td></tr>
+      <tr><td>验收标准</td><td>免责声明 100% 附带；解读引文必须逐字来自【典籍依据】；趋势方向不得与服务端规则结论相悖；排盘数值全部来自服务端重算</td></tr>
+    </table>
+  </div>
+
+  <div class="feat-card">
+    <h4>F4：追问循环（FR-05）</h4>
+    <table>
+      <tr><td>一句话描述</td><td>对同一卦象最多追问 3 次，多轮对话仍受典籍依据与同卦上下文约束，超限温和收尾</td></tr>
+      <tr><td>输入</td><td>{followup: {index:1..3, question ≤200字, history:[{question,answer}]}}（前端持有历史，服务端无状态）</td></tr>
+      <tr><td>处理逻辑</td><td>校验模块统一校验（轮次/一致性/长度/结构）→ 构建多轮 messages（原始卦象 → 历史问答对 → 本次追问）→ system 追加同卦约束指令</td></tr>
+      <tr><td>输出</td><td>与首答同构的追问解读；前端以【追问n】形式追加展示</td></tr>
+      <tr><td>异常处理</td><td>第 4 次或 history≥3 → 400"此卦已尽，建议心定后另择时再问"；index 与 history 不一致→400 刷新提示；空追问→入戏提示</td></tr>
+      <tr><td>依赖</td><td>F3 解卦管线；followup.py 校验模块（前后端共用）</td></tr>
+      <tr><td>验收标准</td><td>3 次内正常应答且回答与原卦象自洽（回归：乾初爻动→姤）；第 4 次请求 400 且文案为收尾语；追问不改变卦象与动爻</td></tr>
+    </table>
+  </div>
+
+  <div class="feat-card">
+    <h4>F5：合规与安全护栏（NFR-04）</h4>
+    <table>
+      <tr><td>一句话描述</td><td>免责声明 100% 附带 + 敏感输出过滤 + API 密钥隔离</td></tr>
+      <tr><td>输入</td><td>所有 AI 输出与用户请求</td></tr>
+      <tr><td>处理逻辑</td><td>免责声明服务端/前端双层固定附；疾病/投资/法律指令场景只给一般性思路；安全响应头（CSP/nosniff）；密钥仅存服务端 .env 且响应中扫描拦截</td></tr>
+      <tr><td>输出</td><td>合规的可发布内容</td></tr>
+      <tr><td>异常处理</td><td>命中敏感场景→改写为一般性建议并提示求证专业渠道</td></tr>
+      <tr><td>依赖</td><td>无</td></tr>
+      <tr><td>验收标准</td><td>抽样 100 条解读：免责覆盖率 100%、零绝对化断言、零专业指令</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 4. 技术架构 ==================== -->
+<div class="page-break"></div>
+
+<div class="sec">
+  <h2>4. 技术架构</h2>
+
+  <h3>4.1 技术选型</h3>
+  <table>
+    <tr><th style="width:20%;">层级</th><th style="width:25%;">技术</th><th>选型理由</th></tr>
+    <tr><td>前端框架</td><td>原生 HTML/JS/CSS；微信原生小程序</td><td>零构建链、双端覆盖；问事/摇卦交互不依赖重框架，便于审核与长期维护</td></tr>
+    <tr><td>UI/样式</td><td>手写 CSS/WXSS（纸墨主题，CSS 变量）</td><td>视觉资产（卦符/阴阳爻线）为自绘，无需组件库；与"入戏"微文案体系配套</td></tr>
+    <tr><td>后端框架</td><td>Python FastAPI + uvicorn</td><td>农历/干支生态（lunar-python）成熟；与 AI 调用同语言；异步支持断连取消</td></tr>
+    <tr><td>数据库</td><td>P0 无（卦象 JSON 全量落库为规划）；典籍库为 JSON 文件</td><td>无个人数据存储，先验证需求；知识库以文件版本化，Git 即审计日志</td></tr>
+    <tr><td>AI/模型</td><td>DeepSeek Chat API（thinking 关闭，max_tokens 2200）</td><td>中文术数语料熟悉度高、成本可控；模型与提示词均配置化</td></tr>
+    <tr><td>部署</td><td>本地 uvicorn / 单机部署；发布需 HTTPS 域名</td><td>P0 以本地与内测为主；小程序正式版要求 HTTPS 合法域名</td></tr>
+    <tr><td>其他关键依赖</td><td>freizl/yijing 64gua.json（典籍数据）；lunar-python（规划：干支）；微信开发者工具</td><td>典籍原文是防幻觉基石；干支转换是纳甲装卦前置</td></tr>
+  </table>
+
+  <h3>4.2 系统架构草图</h3>
+  <pre>用户浏览器 (H5) / 微信小程序
+  │  POST /api/interpret {question, lines[6]{coins}, followup?}
+  ▼
+FastAPI 后端 (app.py)
+  ├── canonicalize：输入校验 + classify_coins 服务端重算卦象（本卦/变卦/动爻）
+  ├── 知识检索层：gua_classics.py → 64gua.json 构建【典籍依据】
+  ├── 追问校验：followup.py（轮次/一致性/长度，前后端共用）
+  └── LLM 编排：system=提示词+典籍依据(+同卦约束)；user=结构化卦象 JSON
+  │
+  ▼
+数据 / 外部服务
+  ├── config/64gua.json   ：64 卦卦辞/彖/大小象/爻辞（防幻觉基石）
+  ├── config/prompt.json  ：系统提示词（PromptStore 运行时可调，原子写）
+  └── DeepSeek API        ：生成解读（60s 超时、断连取消、响应上限校验）</pre>
+
+  <h3>4.3 核心数据流</h3>
+  <pre>用户操作: 摇满六爻，点击「解卦」
+  │
+  ▼
+前端: POST /api/interpret {question, lines:[{coins}×6]}   ← 只送铜钱面，不送术数结论
+  │
+  ▼
+后端: classify_coins 重算六爻 → 本卦/变卦/动爻 → 查 64gua.json 构建【典籍依据】
+  │   → system = 提示词 + 典籍依据（追问时再追加同卦约束与历史问答）
+  ▼
+DeepSeek: 依据典籍原文生成五段式解读
+  │
+  ▼
+后端: 完整性/长度/密钥泄漏校验 → 返回 {interpretation, classics, hexagram}
+  │
+  ▼
+前端: 展示解读 + 卦卡下方并排展示典籍卦辞原文（可核对）→ 追问面板开启（剩余 3 次）</pre>
+
+  <h3>4.4 关键设计约束</h3>
+  <p style="padding-left:4mm;">1. 术数计算只允许确定性代码完成；LLM 禁止重新起卦、改写卦名/动爻/阴阳，禁止计算任何术数结果。</p>
+  <p style="padding-left:4mm;">2. 解读引用的卦辞/爻辞/象传必须逐字来自注入的【典籍依据】；免责声明必须 100% 附带于每次解读。</p>
+  <p style="padding-left:4mm;">3. API 密钥只存服务端 .env，绝不下发前端、绝不在响应或日志中回显。</p>
+  <p style="padding-left:4mm;">4. 一问一卦：追问不重新起卦，始终基于同一卦象；上限 3 次。</p>
+</div>
+
+<!-- ==================== 5. 数据模型 ==================== -->
+<div class="sec">
+  <h2>5. 数据模型</h2>
+
+  <h3>5.1 核心实体</h3>
+<pre>// 爻：一次摇掷的结果（前端/后端共用结构）
+interface CastLine {
+  coins: ("back" | "front")[];   // 三枚钱币面，back=背面
+  name: "少阳" | "少阴" | "老阳" | "老阴";
+  yang: boolean;                 // 本爻阴阳（true=阳）
+  moving: boolean;               // 是否动爻（老阳/老阴）
+  backCount: 0 | 1 | 2 | 3;      // 背面数
+  marker: "" | "○" | "×";        // 动爻标记
+}
+
+// 卦象描述：服务端重算后的只读结果
+interface HexagramDescription {
+  number: number;                // King Wen 卦序 1-64
+  name: string;                  // 短名，如"同人"
+  fullName: string;              // 全名，如"天火同人"
+  symbol: string;                // Unicode 卦符 ䷀..䷿
+  upper: { name: string; nature: string };  // 上卦，如 乾/天
+  lower: { name: string; nature: string };  // 下卦
+}
+
+// 解卦请求/响应
+interface InterpretRequest {
+  question: string;              // 原始问题（服务端限 1-2000 字）
+  lines: { coins: ("back"|"front")[] }[];   // 恰好 6 爻，自下而上
+  followup?: {                   // 缺省=首次解卦
+    index: 1 | 2 | 3;
+    question: string;            // ≤200 字
+    history: { question: string; answer: string }[];  // 前几轮追问问答
+  };
+}
+
+interface InterpretResponse {
+  interpretation: string;        // 五段式解读 + 免责声明
+  model: string;
+  hexagram: { primary: HexagramDescription; changed: HexagramDescription; movingLines: number[] };
+  classics?: { primary: { guaCi: string; daXiang: string }; changed: { guaCi: string; daXiang: string } | null } | null;
+}
+
+// 典籍条目（64gua.json，防幻觉知识库）
+interface GuaEntry {
+  id: string;                    // 自下而上阴阳二进制串，如 "101010"=既济
+  name: string;                  // 卦名，如"既济"
+  gua_ci: string;                // 卦辞
+  tuan_ci: string;               // 彖辞
+  da_xiang: string;              // 大象传
+  yao_ci: string[];              // 爻辞[0..5]=初爻..上爻，[6]=用九/用六
+  xiao_xiang: string[];          // 小象传
+  symbol: string;
+}</pre>
+
+  <h3>5.2 数据关系</h3>
+  <p style="padding-left:4mm;">· 一次问事会话 与 卦象 是 1 对 1 关系（一问一卦，追问不改卦）</p>
+  <p style="padding-left:4mm;">· 一次会话 与 解读 是 1 对 1..4 关系（首答 + ≤3 次追问）</p>
+  <p style="padding-left:4mm;">· 卦象 与 64gua.json 典籍条目 是 n 对 1 查询关系（本卦/变卦各查一条）</p>
+</div>
+
+<!-- ==================== 6. 非功能性需求 ==================== -->
+<div class="sec">
+  <h2>6. 非功能性需求</h2>
+
+  <h3>6.1 性能</h3>
+  <table>
+    <tr><th>指标</th><th>目标值</th><th>测量方法</th></tr>
+    <tr><td>解卦接口响应 (P95)</td><td>≤ 15 秒（LLM 生成；后续流式可更早出首屏）</td><td>服务端计时埋点（收到请求→返回响应）</td></tr>
+    <tr><td>首屏加载 (LCP)</td><td>≤ 1.5 秒（静态页，无外部字体/脚本依赖）</td><td>Lighthouse / DevTools Performance</td></tr>
+    <tr><td>摇卦动画流畅度</td><td>≥ 30fps，翻转期无卡顿掉帧</td><td>DevTools FPS 仪表 / 真机目测</td></tr>
+    <tr><td>摇卦随机分布</td><td>每爻四结果与理论值偏差 ≤ 1%（5 万样本）</td><td>种子化模拟统计（engine/tests 已实现）</td></tr>
+  </table>
+
+  <h3>6.2 可用性</h3>
+  <p><strong>浏览器兼容：</strong>Chrome / Edge / Safari 最新两个大版本；微信小程序基础库 ≥ 3.0</p>
+  <p><strong>语言支持：</strong>简体中文（P0）；文案体系已按"入戏微文案"标准化，便于后续多语言</p>
+  <p><strong>降级策略：</strong>典籍库缺失→跳过 grounding 仍可解卦；AI 服务不可用→友好错误+重试；系统"减少动态效果"→全部动画降级；音效可一键关闭</p>
+
+  <h3>6.3 安全性</h3>
+  <table>
+    <tr><th>要求</th><th>实现方式</th></tr>
+    <tr><td>用户认证</td><td>P0 免登录（无账号体系，无个人数据收集）；P1 如增加历史云同步再引入微信授权</td></tr>
+    <tr><td>数据隔离</td><td>无个人数据落库；问事记录仅存于用户本地（规划）</td></tr>
+    <tr><td>API 密钥保护</td><td>仅存服务端 .env；响应与日志双重扫描，密钥永不回显；prompt 编辑端点默认仅本机（待加固项已登记）</td></tr>
+    <tr><td>传输加密</td><td>开发期本地 HTTP；发布切换 HTTPS；响应统一 no-store + CSP/nosniff 等安全头</td></tr>
+  </table>
+
+  <h3>6.4 可靠性</h3>
+  <p>上游 LLM 超时 60 秒→504 可重试；用户中途断连→取消上游任务避免浪费；响应不完整（finish_reason≠stop）→拒绝并提示重试；典籍数据库缺失或损坏→优雅降级（无 grounding 解读）而非崩溃；所有服务端异常不向用户泄漏内部诊断信息。</p>
+</div>
+
+<!-- ==================== 7. 里程碑 ==================== -->
+<div class="sec">
+  <h2>7. 开发计划与里程碑</h2>
+
+  <table>
+    <tr><th style="width:15%;">里程碑</th><th style="width:30%;">目标（一句话）</th><th>包含任务</th></tr>
+    <tr>
+      <td><strong>M1: 可摇可解</strong></td>
+      <td>摇卦正确性与解卦管线跑通</td>
+      <td>1. 摇卦引擎+64卦表+概率/确定性单测　2. /api/interpret 典籍 grounding　3. H5 页面（摇卦→卦象→解读）串通</td>
+    </tr>
+    <tr>
+      <td><strong>M2: 体验完整</strong></td>
+      <td>FR-01/FR-05 全量落地，达到 SRS 验收</td>
+      <td>1. 问事台（分类/签语/微文案/焚化）　2. 追问循环（3 次上限/收尾）　3. 免责 100%+安全过滤+文案与概率文档修正</td>
+    </tr>
+    <tr>
+      <td><strong>M3: 双端与合规</strong></td>
+      <td>小程序交付 + 合规加固</td>
+      <td>1. 微信小程序双页版　2. 历史记录 localStorage 持久化　3. 默认监听 127.0.0.1/端口统一/发布检查清单</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ==================== 8. 成功指标 ==================== -->
+<div class="sec">
+  <h2>8. 成功指标</h2>
+  <table>
+    <tr><th>指标</th><th>目标</th><th>衡量方式</th></tr>
+    <tr><td>问事完成率（起卦→读完解读）</td><td>> 60%</td><td>前端埋点：起卦事件→解读曝光事件</td></tr>
+    <tr><td>解卦转化率（完成摇卦→点击解卦）</td><td>> 70%</td><td>埋点：六爻完成事件→解卦点击事件</td></tr>
+    <tr><td>追问使用率（首答后发生追问）</td><td>≥ 30%</td><td>埋点：followup 请求数 / 首答数</td></tr>
+    <tr><td>解读质检合格率（引文可核对+无敏感输出）</td><td>> 95%</td><td>训练师每周抽检 5% + 自动免责覆盖率扫描</td></tr>
+    <tr><td>免责声明覆盖率</td><td>= 100%</td><td>自动化扫描全部解读响应</td></tr>
+  </table>
+</div>
+
+<!-- ==================== 9. 风险与边界 ==================== -->
+<div class="sec">
+  <h2>9. 风险与边界</h2>
+
+  <h3>9.1 技术风险</h3>
+  <table>
+    <tr><th>风险</th><th>影响</th><th>缓解策略</th></tr>
+    <tr><td>LLM 幻觉：编造卦辞爻辞、擅改卦象</td><td>产品可信度崩塌</td><td>排盘全部代码化；典籍依据注入+逐字引用指令；一致性拦截（结论与规则层相悖即重试）；人工抽检闭环</td></tr>
+    <tr><td>政策与渠道合规（封建迷信认定）</td><td>小程序下架/无法过审</td><td>文化娱乐定位；免责声明前置；禁项清单硬编码进安全层；以「传统文化」类目申报</td></tr>
+    <tr><td>三端术数逻辑漂移（Web/小程序/后端各一份实现）</td><td>同一卦不同端结果不一致</td><td>同源规则文档+交叉回归测试（64 卦全量核对已建立）；后续收敛到共享数据表</td></tr>
+    <tr><td>上游模型/接口变更（模型名、参数）</td><td>解卦服务不可用</td><td>模型与提示词配置化；/api/health 健康检查；502/504 友好降级</td></tr>
+  </table>
+
+  <h3>9.2 边界声明（Out of Scope）</h3>
+  <table>
+    <tr><th>不做</th><th>原因</th></tr>
+    <tr><td>登录注册与账号体系</td><td>P0 免登录即可验证需求；避免个人数据收集带来的合规负担</td></tr>
+    <tr><td>会员支付</td><td>先验证价值再商业化；支付需企业资质</td></tr>
+    <tr><td>社区 / 真人解卦师入驻</td><td>内容治理成本高，P3 生态阶段再评估</td></tr>
+    <tr><td>健康疾病、投资涨跌、生死预测</td><td>合规红线，任何阶段都不做</td></tr>
+  </table>
+</div>
+
+<!-- ==================== 10. 附录 ==================== -->
+<div class="sec">
+  <h2>10. 附录</h2>
+
+  <h3>10.1 竞品参考</h3>
+  <table>
+    <tr><th>产品</th><th>关键特点</th><th>我们的差异</th></tr>
+    <tr><td>人工算命（线下/付费咨询）</td><td>人格化服务，用户信任感强</td><td>AI 标准化输出，价格低一个量级，质量稳定可质检</td></tr>
+    <tr><td>套壳 GPT 算命小程序</td><td>开发快、成本低</td><td>排盘由确定性代码完成（他们常算错）；引文来自典籍数据库（他们常编造）</td></tr>
+    <tr><td>星座运势类 App</td><td>用户基数大、日活钩子成熟</td><td>卦象体系更深（一事一占 vs 笼统运势），有"应验打卡"闭环与典籍厚度</td></tr>
+  </table>
+
+  <h3>10.2 术语表</h3>
+  <table>
+    <tr><th>术语</th><th>定义</th></tr>
+    <tr><td>问事</td><td>用户就某一具体困惑发起的一次占问；一事一占</td></tr>
+    <tr><td>摇卦</td><td>三枚铜钱摇六次逐爻成卦的起卦方法；一背=少阳、二背=少阴、三背=老阳(动)、三字=老阴(动)</td></tr>
+    <tr><td>动爻</td><td>老阳(○)/老阴(×)爻，代表变化点，解卦的核心依据</td></tr>
+    <tr><td>本卦 / 变卦</td><td>摇卦所得原始卦 / 动爻阴阳翻转后的卦，分别代表现状与趋势</td></tr>
+    <tr><td>用神</td><td>六爻分析中代表所问之事的六亲（官鬼/妻财/父母/兄弟/子孙），按问事分类映射</td></tr>
+    <tr><td>典籍依据</td><td>服务端从 64gua.json 检索并注入 LLM 的《周易》原文块，是解读的唯一合法引文来源</td></tr>
+    <tr><td>疏文</td><td>用户写下心事的文本载体，确认后以"焚化"动画封存</td></tr>
+  </table>
+
+  <h3>10.3 参考资料</h3>
+  <p>· 《问玄项目方案》V1.0（docs/proposal）　· 《软件需求规格说明书 SRS》v0.2 含附录A（docs/requirements）</p>
+  <p>· freizl/yijing 64gua.json 典籍数据（github.com/freizl/yijing）　· 《增删卜易》《卜筮正宗》（排盘与卦例回测来源）</p>
+</div>
+
+<!-- ==================== 检查清单 ==================== -->
+<div class="page-break"></div>
+
+<div class="checklist">
+  <h2>提交前自检清单</h2>
+  <p style="font-size:9.5pt; color:var(--muted); margin-bottom:3mm;">在把 PRD 交给 AI 编码代理之前，请逐项确认：</p>
+  <ul style="list-style:none; padding:0;">
+    <li>☑ <strong>1. 产品概述</strong> — 一句话定义让没听过这个想法的人也能秒懂？<strong>是：写困惑→摇卦→得有典籍依据的解读。</strong></li>
+    <li>☑ <strong>2. 用户故事</strong> — 至少 2 个故事，每个都包含"角色-功能-价值"三要素？<strong>是：3 个。</strong></li>
+    <li>☑ <strong>3. 功能全景</strong> — P0/P1/P2 分清楚了？P0 不超过 6 个？<strong>是：P0 共 5 个。</strong></li>
+    <li>☑ <strong>4. P0 详述</strong> — 每个 P0 功能都有验收标准？<strong>是：F1-F5 逐条可测。</strong></li>
+    <li>☑ <strong>5. 技术架构</strong> — 每个技术选型都有理由？架构图能画出来？<strong>是。</strong></li>
+    <li>☑ <strong>6. 数据模型</strong> — 核心实体定义了？AI 能根据它们写代码？<strong>是：5 个 interface，与代码实际结构一致。</strong></li>
+    <li>☑ <strong>7. 非功能需求</strong> — 性能指标填了？安全措施考虑了？<strong>是。</strong></li>
+    <li>☑ <strong>8. 里程碑</strong> — 知道先做什么后做什么？<strong>是：M1-M3（M1/M2 已完成）。</strong></li>
+    <li>☑ <strong>9. 成功指标</strong> — 指标是可量化的、可测量的？<strong>是：5 项均有埋点/扫描方式。</strong></li>
+    <li>☑ <strong>10. 风险与边界</strong> — 知道什么不做、什么可能出错？<strong>是。</strong></li>
+  </ul>
+</div>
+
+<!-- ====== 尾注 ====== -->
+<div class="footer">
+  问玄 PRD v1.0 &nbsp;|&nbsp; 依据 SRS v0.2 与《问玄项目方案》V1.0 编制 &nbsp;|&nbsp; 模板：AI 编程实训营 Module 1
+</div>
+
+</div><!-- /.doc -->
+
+</body>
+</html>

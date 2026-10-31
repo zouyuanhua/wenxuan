@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD 模板 · AI 编程实训营</title>
+<style>
+  @page { size: A4; margin: 14mm 14mm 14mm 14mm; }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #2563eb; --primary-light: #eff6ff; --text: #1a1a1a;
+    --muted: #555; --faint: #999; --border: #d1d5db; --row-stripe: #f9fafb;
+    --hint-bg: #f8fafc; --hint-border: #e2e8f0; --code-bg: #f8f9fb;
+    --check-bg: #ecfdf5; --check-border: #a7f3d0;
+  }
+
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 10pt; line-height: 1.65; color: var(--text);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  @media screen { body { background: #e8ecf1; padding: 6mm 0; } }
+
+  .doc {
+    max-width: 195mm; margin: 0 auto; background: #fff; padding: 14mm 16mm;
+  }
+  @media screen { .doc { box-shadow: 0 2px 12px rgba(0,0,0,.08); margin-bottom: 8mm; } }
+
+  /* 封面 */
+  .cover {
+    text-align: center; padding: 15mm 0 12mm;
+    border-bottom: 4px solid var(--primary); margin-bottom: 8mm;
+  }
+  .cover .badge {
+    display: inline-block; background: var(--primary); color: #fff;
+    font-size: 9pt; font-weight: 700; padding: 2px 14px; border-radius: 3px;
+    letter-spacing: 0.06em; margin-bottom: 5mm;
+  }
+  .cover h1 { font-size: 20pt; font-weight: 800; margin-bottom: 3mm; }
+  .cover .subtitle { font-size: 11pt; color: var(--muted); }
+  .cover .meta { font-size: 9pt; color: var(--faint); margin-top: 3mm; }
+
+  /* 使用说明框 */
+  .guide-box {
+    background: var(--primary-light); border: 1px solid #bfdbfe;
+    border-radius: 5px; padding: 4mm 5mm; margin-bottom: 8mm; font-size: 9.5pt;
+  }
+  .guide-box h3 { font-size: 10.5pt; margin-bottom: 2mm; color: var(--primary); }
+  .guide-box p { margin-bottom: 1mm; }
+  .guide-box .core { font-weight: 700; }
+
+  /* 产品名填写 */
+  .product-name {
+    text-align: center; margin: 6mm 0; padding: 5mm;
+    border: 2px dashed var(--border); border-radius: 5px; background: #fdfdfd;
+  }
+  .product-name label { font-size: 10pt; color: var(--muted); }
+  .product-name .name-line {
+    display: block; border-bottom: 2px solid var(--primary); width: 60%;
+    margin: 3mm auto; height: 8mm;
+  }
+
+  /* 章节 */
+  .sec { margin-bottom: 7mm; page-break-inside: avoid; }
+  .sec h2 {
+    font-size: 13pt; font-weight: 700; color: var(--primary);
+    border-left: 4px solid var(--primary); padding-left: 7px; margin-bottom: 3mm;
+  }
+  .sec h3 { font-size: 10.5pt; font-weight: 700; margin: 4mm 0 2mm; color: #374151; }
+  .sec h4 { font-size: 10pt; font-weight: 700; margin: 3mm 0 1.5mm; color: var(--muted); }
+
+  /* 提示/注释 */
+  .hint {
+    background: var(--hint-bg); border: 1px solid var(--hint-border);
+    border-radius: 4px; padding: 2mm 4mm; margin-bottom: 2mm; font-size: 9pt; color: #6b7280;
+  }
+  .hint::before { content: "提示："; font-weight: 700; color: #4b5563; }
+
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0; }
+  th, td {
+    padding: 2mm 3mm; text-align: left; border: 1px solid var(--border);
+    font-size: 9.5pt; vertical-align: top;
+  }
+  th { background: #f1f5f9; font-weight: 700; font-size: 9pt; text-align: center; }
+
+  /* 填写格 */
+  .fill { border-bottom: 1px dashed #aaa; min-width: 30mm; display: inline-block; min-height: 1.2em; }
+  td .fill { border-bottom-style: none; }
+  td.fill-cell { background: #fefefe; }
+
+  /* 代码/架构块 */
+  pre, code { font-family: "SF Mono", "Fira Code", "Consolas", "Monaco", monospace; font-size: 8.5pt; line-height: 1.5; }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3mm 4mm; overflow-x: auto; margin: 2mm 0; white-space: pre;
+  }
+
+  /* 功能卡片 */
+  .feat-card {
+    background: #fafbfc; border: 1px solid var(--border); border-radius: 5px;
+    padding: 3mm 4mm; margin-bottom: 3mm; page-break-inside: avoid;
+  }
+  .feat-card h4 { color: var(--primary); margin-bottom: 1.5mm; font-size: 10.5pt; }
+  .feat-card table { margin: 0; }
+  .feat-card td:first-child {
+    font-weight: 600; white-space: nowrap; width: 22mm;
+    font-size: 9pt; color: var(--muted);
+  }
+  .feat-card td { border: none; padding: 1.2mm 2mm; background: none; }
+  .feat-card tr { border-bottom: 1px solid #eee; }
+  .feat-card tr:last-child { border-bottom: none; }
+
+  /* 用户故事 */
+  .story-blk {
+    background: var(--primary-light); border: 1px solid #bfdbfe; border-radius: 4px;
+    padding: 2mm 4mm; margin: 2mm 0; font-size: 9.5pt;
+  }
+
+  /* 里程碑 */
+  .ms {
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 2mm 4mm; margin-bottom: 2mm;
+  }
+  .ms strong { color: var(--primary); }
+
+  /* 清单 */
+  .checklist {
+    background: var(--check-bg); border: 2px solid var(--check-border); border-radius: 5px;
+    padding: 4mm 6mm; margin-top: 6mm;
+  }
+  .checklist h2 { border-left-color: #059669; color: #059669; margin-bottom: 3mm; }
+  .checklist li { margin-bottom: 1.5mm; font-size: 10pt; }
+  .checklist .box { display: inline-block; width: 12px; height: 12px; border: 2px solid #059669; border-radius: 2px; margin-right: 2mm; vertical-align: middle; }
+
+  /* 页脚 */
+  .footer {
+    text-align: center; font-size: 8pt; color: var(--faint);
+    margin-top: 8mm; padding-top: 3mm; border-top: 1px solid var(--border);
+  }
+
+  /* 必填标记 */
+  .req { color: #dc2626; font-weight: 700; font-size: 8pt; margin-left: 1mm; }
+  .opt { color: var(--faint); font-size: 8pt; margin-left: 1mm; }
+
+  /* 打印 */
+  @media print {
+    body { background: #fff; }
+    .doc { box-shadow: none; padding: 10mm 12mm; max-width: 100%; }
+    .sec { page-break-inside: avoid; }
+    h2, h3, h4 { page-break-after: avoid; }
+    pre { page-break-inside: avoid; }
+    .feat-card { page-break-inside: avoid; }
+    .fill { border-bottom-color: #999; }
+  }
+
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+<!-- ==================== 封面 ==================== -->
+<div class="cover">
+  <div class="badge">产品需求文档 · PRD</div>
+  <h1>产品需求文档</h1>
+  <div class="product-name">
+    <label>产品名称</label>
+    <span class="name-line"></span>
+  </div>
+  <p class="meta">版本：v____ &nbsp;|&nbsp; 日期：2026-__-__ &nbsp;|&nbsp; 小组：________</p>
+</div>
+
+<!-- ==================== 使用说明 ==================== -->
+<div class="guide-box">
+  <h3>使用说明</h3>
+  <p>本模板适用于各组的产品实践环节。请删除灰色提示文字，替换为你们组的实际内容。</p>
+  <p class="core">核心理念（来自 Lecture 1）：PRD 是"规划 → AI 生成 → 修改优化 → 迭代改进"范式中的第一步。<strong>写得越清楚，AI 生成的代码越靠谱。Good context leads to good code.</strong></p>
+</div>
+
+<!-- ==================== 1. 产品概述 ==================== -->
+<div class="sec">
+  <h2>1. 产品概述</h2>
+
+  <h3>1.1 一句话定义 <span class="req">必填</span></h3>
+  <div class="hint">用一句话说清楚产品是什么。公式：[产品名] 是 [面向谁] 的 [什么类型的产品]，帮助用户 [解决什么问题]。示例：MedKit 是一款基于浏览器的语音驱动临床模拟系统，帮助医学生随时随地进行接诊训练并获得 AI 评分。</div>
+  <p style="font-size:11pt; padding:2mm 0;">___________________________________________________________________________</p>
+
+  <h3>1.2 要解决的问题 <span class="req">必填</span></h3>
+  <div class="hint">列出 3-5 个核心痛点，每个痛点对应产品如何解决。</div>
+  <table>
+    <tr><th style="width:45%;">现状痛点</th><th>解法</th></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+
+  <h3>1.3 目标用户 <span class="req">必填</span></h3>
+  <div class="hint">列出 2-4 类目标用户，说明他们的核心诉求。</div>
+  <table>
+    <tr><th>用户角色</th><th>核心诉求</th><th>使用频率 / 付费意愿</th></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+
+  <h3>1.4 产品愿景</h3>
+  <div class="hint">一句话描述产品的长期愿景。要够大，但不能空洞。示例：让每一位医学生都能在进入临床前，完成 100+ 次高质量的模拟接诊训练。</div>
+  <p style="padding:1mm 0;">___________________________________________________________________________</p>
+
+  <h3>1.5 产品边界</h3>
+  <div class="hint">明确本期范围，防止需求蔓延。</div>
+  <p><strong>本期做：</strong></p>
+  <p style="padding-left:4mm;">· ___________________________________________</p>
+  <p style="padding-left:4mm;">· ___________________________________________</p>
+  <p><strong>本期不做：</strong></p>
+  <p style="padding-left:4mm;">· ___________________________________________</p>
+  <p><strong>明确声明</strong>（如适用）：___________________________________________</p>
+</div>
+
+<!-- ==================== 2. 用户故事与使用场景 ==================== -->
+<div class="sec">
+  <h2>2. 用户故事与使用场景</h2>
+
+  <h3>2.1 核心用户故事 <span class="req">必填：至少 2 个</span></h3>
+  <div class="hint">用户故事格式：作为 [角色]，我想要 [功能]，以便 [价值]。</div>
+
+  <div class="story-blk">
+    <p><strong>故事 1</strong></p>
+    <p>作为 ___________________，我想要 ___________________，</p>
+    <p>以便 ___________________。</p>
+  </div>
+  <div class="story-blk">
+    <p><strong>故事 2</strong></p>
+    <p>作为 ___________________，我想要 ___________________，</p>
+    <p>以便 ___________________。</p>
+  </div>
+  <div class="story-blk">
+    <p><strong>故事 3</strong></p>
+    <p>作为 ___________________，我想要 ___________________，</p>
+    <p>以便 ___________________。</p>
+  </div>
+
+  <h3>2.2 核心使用流程 <span class="req">必填</span></h3>
+  <div class="hint">画一条端到端的用户旅程，每个步骤一句话。AI 编码代理最需要的就是这个！</div>
+  <pre>Step 1: ________________  — ________________________________
+Step 2: ________________  — ________________________________
+Step 3: ________________  — ________________________________
+Step 4: ________________  — ________________________________
+Step 5: ________________  — ________________________________</pre>
+
+  <h3>2.3 典型使用场景 <span class="opt">可选</span></h3>
+  <div class="hint">讲 1-2 个具体故事，让团队对产品有感性认知。</div>
+  <p><strong>场景 A：________</strong></p>
+  <p style="padding-left:4mm;">1. [用户] 遇到了 _______________</p>
+  <p style="padding-left:4mm;">2. 打开产品，做了 _______________</p>
+  <p style="padding-left:4mm;">3. 系统 _______________</p>
+  <p style="padding-left:4mm;">4. 结果：_______________</p>
+</div>
+
+<!-- ==================== 3. 功能需求 ==================== -->
+<div class="sec">
+  <h2>3. 功能需求</h2>
+
+  <h3>3.1 功能全景 <span class="req">必填</span></h3>
+  <div class="hint">按优先级分组列出所有功能。P0 = MVP 必须做，P1 = 做了更好，P2 = 以后再说。P0 建议不超过 6 个。</div>
+  <pre>[产品名]
+├── P0（MVP 核心，必须做）
+│   ├── ______________ — ________________________________
+│   ├── ______________ — ________________________________
+│   ├── ______________ — ________________________________
+│   └── ______________ — ________________________________
+│
+├── P1（增强体验，做完 P0 再做）
+│   ├── ______________
+│   └── ______________
+│
+├── P2（规模化，本轮不做）
+│   └── ______________
+│
+└── 本期明确不做
+    ├── ______________ — 原因：________
+    └── ______________ — 原因：________</pre>
+
+  <h3>3.2 P0 功能详述 <span class="req">必填</span></h3>
+  <div class="hint">为每个 P0 功能复制下面的卡片。验收标准是最关键的一栏——让人类和 AI 对"做完"有一致的定义。</div>
+
+  <div class="feat-card">
+    <h4>F1：_______________</h4>
+    <table>
+      <tr><td>一句话描述</td><td>________________________________</td></tr>
+      <tr><td>输入</td><td>________________________________</td></tr>
+      <tr><td>处理逻辑</td><td>________________________________</td></tr>
+      <tr><td>输出</td><td>________________________________</td></tr>
+      <tr><td>异常处理</td><td>________________________________</td></tr>
+      <tr><td>依赖</td><td>________________________________</td></tr>
+      <tr><td>验收标准</td><td>________________________________</td></tr>
+    </table>
+  </div>
+
+  <div class="feat-card">
+    <h4>F2：_______________</h4>
+    <table>
+      <tr><td>一句话描述</td><td>________________________________</td></tr>
+      <tr><td>输入</td><td>________________________________</td></tr>
+      <tr><td>处理逻辑</td><td>________________________________</td></tr>
+      <tr><td>输出</td><td>________________________________</td></tr>
+      <tr><td>异常处理</td><td>________________________________</td></tr>
+      <tr><td>依赖</td><td>________________________________</td></tr>
+      <tr><td>验收标准</td><td>________________________________</td></tr>
+    </table>
+  </div>
+
+  <p style="text-align:center; font-size:9pt; color:var(--muted); margin-top:2mm;">（请按需复制更多 F3、F4……的卡片）</p>
+</div>
+
+<!-- ==================== 4. 技术架构 ==================== -->
+<div class="page-break"></div>
+
+<div class="sec">
+  <h2>4. 技术架构</h2>
+
+  <h3>4.1 技术选型 <span class="req">必填</span></h3>
+  <div class="hint">每项技术都写清楚选型理由。AI 编码代理会根据这个表做技术决策。</div>
+  <table>
+    <tr><th style="width:20%;">层级</th><th style="width:25%;">技术</th><th>选型理由</th></tr>
+    <tr><td>前端框架</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td>UI/样式</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td>后端框架</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td>数据库</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td>AI/模型</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td>部署</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td>其他关键依赖</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+
+  <h3>4.2 系统架构草图 <span class="req">必填</span></h3>
+  <div class="hint">画一个简单的架构图：用户 → 前端 → 后端 → 数据库/AI 服务。用 ASCII 画就行。</div>
+  <pre>用户浏览器 (________)
+  │
+  ▼
+后端 API (________)
+  ├── 模块 1: ________
+  ├── 模块 2: ________
+  └── 模块 3: ________
+  │
+  ▼
+数据库 / 外部服务
+  ├── ________: ________
+  ├── ________: ________
+  └── ________: ________</pre>
+
+  <h3>4.3 核心数据流 <span class="opt">选填</span></h3>
+  <div class="hint">描述一个核心业务的数据如何从 A 流到 Z。异步流程尤其需要画清楚。</div>
+  <pre>用户操作: ________
+  │
+  ▼
+前端: ________
+  │
+  ▼
+后端: ________
+  │
+  ▼
+前端: ________</pre>
+
+  <h3>4.4 关键设计约束 <span class="req">必填：至少 2 条</span></h3>
+  <div class="hint">什么不能改、什么必须遵守。例如：API 密钥只能存在服务端；必须支持 Chrome/Edge；无语音设备时要有降级方案。</div>
+  <p style="padding-left:4mm;">1. ___________________________________________</p>
+  <p style="padding-left:4mm;">2. ___________________________________________</p>
+  <p style="padding-left:4mm;">3. ___________________________________________</p>
+</div>
+
+<!-- ==================== 5. 数据模型 ==================== -->
+<div class="sec">
+  <h2>5. 数据模型</h2>
+
+  <h3>5.1 核心实体 <span class="opt">选填：至少 3 个</span></h3>
+  <div class="hint">用你选择的语言写 interface/type/class，让 AI 编码代理直接可用。</div>
+<pre>// 实体 1
+interface ________ {
+  id: string;
+  ____: ____;  // ____
+  ____: ____;  // ____
+}
+
+// 实体 2
+interface ________ {
+  id: string;
+  ____: ____;  // ____
+  ____: ____;  // ____
+}
+
+// 实体 3
+interface ________ {
+  id: string;
+  ____: ____;  // ____
+}</pre>
+
+  <h3>5.2 数据关系 <span class="opt">选填</span></h3>
+  <p style="padding-left:4mm;">· ________ 与 ________ 是 ____ 对 ____ 关系</p>
+  <p style="padding-left:4mm;">· ________ 与 ________ 是 ____ 对 ____ 关系</p>
+</div>
+
+<!-- ==================== 6. 非功能性需求 ==================== -->
+<div class="sec">
+  <h2>6. 非功能性需求</h2>
+
+  <h3>6.1 性能 <span class="req">必填：至少 2 项</span></h3>
+  <table>
+    <tr><th>指标</th><th>目标值</th><th>测量方法</th></tr>
+    <tr><td>API 响应时间 (P95)</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td>首屏加载 (LCP)</td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+
+  <h3>6.2 可用性</h3>
+  <p><strong>浏览器兼容：</strong>________________________________</p>
+  <p><strong>语言支持：</strong>________________________________</p>
+  <p><strong>降级策略：</strong>________________________________</p>
+
+  <h3>6.3 安全性 <span class="req">处理用户数据则必填</span></h3>
+  <table>
+    <tr><th>要求</th><th>实现方式</th></tr>
+    <tr><td>用户认证</td><td class="fill-cell"></td></tr>
+    <tr><td>数据隔离</td><td class="fill-cell"></td></tr>
+    <tr><td>API 密钥保护</td><td class="fill-cell"></td></tr>
+    <tr><td>传输加密</td><td class="fill-cell"></td></tr>
+  </table>
+
+  <h3>6.4 可靠性 <span class="opt">选填</span></h3>
+  <div class="hint">后台任务失败怎么办？服务宕机怎么办？数据会不会丢？</div>
+  <p>___________________________________________</p>
+</div>
+
+<!-- ==================== 7. 里程碑 ==================== -->
+<div class="sec">
+  <h2>7. 开发计划与里程碑</h2>
+  <div class="hint">把 P0 功能拆成 2-5 个里程碑，每个里程碑包含具体的可交付物。</div>
+
+  <table>
+    <tr><th style="width:15%;">里程碑</th><th style="width:30%;">目标（一句话）</th><th>包含任务</th></tr>
+    <tr>
+      <td><strong>M1:</strong></td>
+      <td class="fill-cell"></td>
+      <td class="fill-cell">1. ________________ 2. ________________ 3. ________________</td>
+    </tr>
+    <tr>
+      <td><strong>M2:</strong></td>
+      <td class="fill-cell"></td>
+      <td class="fill-cell">1. ________________ 2. ________________ 3. ________________</td>
+    </tr>
+    <tr>
+      <td><strong>M3:</strong></td>
+      <td class="fill-cell"></td>
+      <td class="fill-cell">1. ________________ 2. ________________ 3. ________________</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ==================== 8. 成功指标 ==================== -->
+<div class="sec">
+  <h2>8. 成功指标</h2>
+  <div class="hint">3-5 个可量化的指标。不要写"产品好用"，要写"用户满意度 > 80%"。</div>
+  <table>
+    <tr><th>指标</th><th>目标</th><th>衡量方式</th></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+</div>
+
+<!-- ==================== 9. 风险与边界 ==================== -->
+<div class="sec">
+  <h2>9. 风险与边界</h2>
+
+  <h3>9.1 技术风险</h3>
+  <table>
+    <tr><th>风险</th><th>影响</th><th>缓解策略</th></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+
+  <h3>9.2 边界声明（Out of Scope）</h3>
+  <div class="hint">明确列出本期不做的功能及其原因，防止需求蔓延。</div>
+  <table>
+    <tr><th>不做</th><th>原因</th></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+</div>
+
+<!-- ==================== 10. 附录 ==================== -->
+<div class="sec">
+  <h2>10. 附录 <span class="opt">可选</span></h2>
+
+  <h3>10.1 竞品参考</h3>
+  <div class="hint">列出 2-3 个相关产品，说明我们与它们的差异。</div>
+  <table>
+    <tr><th>产品</th><th>关键特点</th><th>我们的差异</th></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+
+  <h3>10.2 术语表</h3>
+  <div class="hint">如果你的产品有行业特定术语，在这里定义。</div>
+  <table>
+    <tr><th>术语</th><th>定义</th></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+    <tr><td class="fill-cell"></td><td class="fill-cell"></td></tr>
+  </table>
+
+  <h3>10.3 参考资料</h3>
+  <p>___________________________________________</p>
+</div>
+
+<!-- ==================== 检查清单 ==================== -->
+<div class="page-break"></div>
+
+<div class="checklist">
+  <h2>提交前自检清单</h2>
+  <p style="font-size:9.5pt; color:var(--muted); margin-bottom:3mm;">在把 PRD 交给 AI 编码代理之前，请逐项确认：</p>
+  <ul style="list-style:none; padding:0;">
+    <li><span class="box"></span> <strong>1. 产品概述</strong> — 一句话定义让没听过这个想法的人也能秒懂？</li>
+    <li><span class="box"></span> <strong>2. 用户故事</strong> — 至少 2 个故事，每个都包含"角色-功能-价值"三要素？</li>
+    <li><span class="box"></span> <strong>3. 功能全景</strong> — P0/P1/P2 分清楚了？P0 不超过 6 个？</li>
+    <li><span class="box"></span> <strong>4. P0 详述</strong> — 每个 P0 功能都有验收标准？</li>
+    <li><span class="box"></span> <strong>5. 技术架构</strong> — 每个技术选型都有理由？架构图能画出来？</li>
+    <li><span class="box"></span> <strong>6. 数据模型</strong> — 核心实体定义了？AI 能根据它们写代码？</li>
+    <li><span class="box"></span> <strong>7. 非功能需求</strong> — 性能指标填了？安全措施考虑了？</li>
+    <li><span class="box"></span> <strong>8. 里程碑</strong> — 知道先做什么后做什么？</li>
+    <li><span class="box"></span> <strong>9. 成功指标</strong> — 指标是可量化的、可测量的？</li>
+    <li><span class="box"></span> <strong>10. 风险与边界</strong> — 知道什么不做、什么可能出错？</li>
+  </ul>
+</div>
+
+<!-- ====== 尾注 ====== -->
+<div class="footer">
+  模板版本 v1.0 &nbsp;|&nbsp; 2026-05 &nbsp;|&nbsp; AI 编程实训营 Module 1 &nbsp;|&nbsp; 范文参考：example_prd_medkit / example_prd_suanfamama_paper_reviewer
+</div>
+
+</div><!-- /.doc -->
+
+</body>
+</html>
