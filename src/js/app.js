@@ -435,6 +435,18 @@
     return new Promise(resolve => window.setTimeout(resolve, ms));
   }
 
+  // 卦辞展示(来自服务端 64 卦数据库,FR-03 知识检索层)。
+  function renderClassics(classics) {
+    [['primary-guaci', classics && classics.primary], ['changed-guaci', classics && classics.changed]]
+      .forEach(([id, entry]) => {
+        const target = document.getElementById(id);
+        if (!target) return;
+        const text = entry && typeof entry.guaCi === 'string' ? entry.guaCi.trim() : '';
+        target.textContent = text;
+        target.hidden = !text;
+      });
+  }
+
   interpretButton.addEventListener('click', async () => {
     if (lockedQuestion === null || preparing || casting || interpreting || lines.length !== 6) return;
     renderResults();
@@ -492,6 +504,7 @@
       readingState.textContent = '解读完成';
       aiReading.dataset.state = 'success';
       readingStatusText.textContent = '解读已完成。';
+      renderClassics(data.classics);
     } catch (error) {
       interpretationFailed = true;
       readingState.textContent = '暂未完成';

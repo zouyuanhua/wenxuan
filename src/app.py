@@ -16,6 +16,7 @@ from starlette.requests import ClientDisconnect
 from starlette.responses import JSONResponse, Response
 
 from hexagram import change_lines, classify_coins, describe_hexagram
+from gua_classics import classics_grounding, classics_summary
 from prompt_config import MAX_PROMPT_LENGTH, PromptConfigError, PromptStore, validate_prompt
 
 APP_DIR = Path(__file__).resolve().parent
@@ -151,9 +152,12 @@ def canonicalize(body):
 
 
 async def interpret(client, api_key, data, system_prompt):
+    # FR-03 知识检索层：注入权威卦辞爻辞（64卦数据库），模型只允许依据原文解读（防幻觉）。
+    grounding = classics_grounding(data)
+    system_content = f"{system_prompt}\n\n{grounding}" if grounding else system_prompt
     payload = {
         "model": MODEL,
-        "messages": [{"role": "system", "content": system_prompt},
+        "messages": [{"role": "system", "content": system_content},
                      {"role": "user", "content": json.dumps(data, ensure_ascii=False)}],
         "thinking": {"type": "disabled"}, "stream": False, "max_tokens": 2200,
     }
@@ -191,7 +195,8 @@ async def interpret(client, api_key, data, system_prompt):
             or len(content) > 20000 or api_key in content):
         raise APIError(502, "INVALID_INTERPRETATION", "解卦服务返回内容异常，请重试。")
     return {"interpretation": content.strip(), "model": MODEL,
-            "hexagram": {name: data[name] for name in ("primary", "changed", "movingLines")}}
+            "hexagram": {name: data[name] for name in ("primary", "changed", "movingLines")},
+            "classics": classics_summary(data)}
 
 
 async def interpret_until_disconnect(request, client, api_key, data, timeout_seconds, system_prompt):

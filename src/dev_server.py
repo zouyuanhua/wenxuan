@@ -70,7 +70,14 @@ class PreviewHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         if length:
             self.rfile.read(length)
-        payload = json.dumps({"interpretation": MOCK_INTERPRETATION}, ensure_ascii=False)
+        payload = json.dumps({
+            "interpretation": MOCK_INTERPRETATION,
+            "classics": {
+                "primary": {"guaCi": "乾：元亨，利贞。", "daXiang": "天行健，君子以自强不息。"},
+                "changed": {"guaCi": "坤：元亨，利牝马之贞。君子有攸往，先迷后得主，利。西南得朋，东北丧朋。安贞吉。",
+                            "daXiang": "地势坤，君子以厚德载物。"},
+            },
+        }, ensure_ascii=False)
         return self._send(200, payload, "application/json; charset=utf-8")
 
 
