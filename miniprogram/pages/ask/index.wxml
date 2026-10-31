@@ -1,0 +1,75 @@
+<view class="page">
+  <!-- 氛围条 -->
+  <view class="atmosphere"><text>{{atmosphere}}</text></view>
+  <view class="title serif"><text>何事所困?</text></view>
+  <view class="guide"><text>抽一支签，说说你的困惑</text></view>
+
+  <!-- 分类宫格 -->
+  <view class="categories">
+    <view
+      wx:for="{{categories}}"
+      wx:key="id"
+      class="category {{selectedIndex === index ? 'selected' : ''}} {{locked ? 'disabled' : ''}}"
+      data-index="{{index}}"
+      bindtap="onSelectCategory"
+    >
+      <text class="cat-icon">{{item.icon}}</text>
+      <text class="cat-name">{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 签语 -->
+  <view class="tagline {{taglineVisible ? 'visible' : ''}}" wx:if="{{tagline}}">
+    <text>{{tagline}}</text>
+  </view>
+
+  <!-- 子项签 -->
+  <view class="subs" wx:if="{{subs.length}}">
+    <view
+      wx:for="{{subs}}"
+      wx:key="name"
+      class="sub {{selectedSub === index ? 'selected' : ''}} {{locked ? 'disabled' : ''}}"
+      data-index="{{index}}"
+      bindtap="onSelectSub"
+    >
+      <text>{{item}}</text>
+    </view>
+  </view>
+
+  <!-- 疏文 -->
+  <view class="paper {{hasError ? 'error' : ''}}">
+    <textarea
+      class="question-input"
+      value="{{question}}"
+      maxlength="200"
+      placeholder="心事写于此，上不应人，下不示人"
+      placeholder-class="placeholder"
+      disabled="{{locked}}"
+      bindinput="onQuestionInput"
+    ></textarea>
+    <text class="count {{countOver ? 'over' : ''}}">{{count}} / 200</text>
+  </view>
+  <view class="footer">
+    <text class="help {{hasError ? 'help-error' : ''}}">{{helpText}}</text>
+    <button class="confirm" disabled="{{!canConfirm || locked}}" bindtap="onConfirm">诚心已备 · 起卦</button>
+  </view>
+
+  <!-- 免责 -->
+  <view class="disclaimer">
+    <text>卦象仅供参考，路在你自己脚下</text>
+    <text class="toggle" bindtap="onToggleDisclaimer">{{disclaimerOpen ? '收起' : 'ⓘ'}}</text>
+  </view>
+  <view class="disclaimer-full" wx:if="{{disclaimerOpen}}">
+    <text>内容基于传统文化典籍生成，仅供文化娱乐参考，不构成医疗、法律、投资、婚姻等专业建议。</text>
+  </view>
+
+  <!-- 焚化转场 -->
+  <view class="burn-overlay" wx:if="{{burning}}" bindtap="onBurnSkip">
+    <view class="burn-paper">
+      <text class="burn-text">{{question}}</text>
+      <view class="burn-flame"></view>
+      <view class="burn-smoke"></view>
+    </view>
+    <text class="burn-skip">轻触任意处跳过</text>
+  </view>
+</view>

@@ -1,0 +1,16 @@
+{
+  "description": "问玄小程序(开发配置)",
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "libVersion": "3.0.0",
+  "projectname": "wenxuan",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "babelSetting": { "ignore": [], "disablePlugins": [], "outputPath": "" }
+  },
+  "condition": {}
+}

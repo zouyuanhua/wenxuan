@@ -1,0 +1,118 @@
+<view class="page">
+  <!-- 所问之事 -->
+  <view class="question-strip">
+    <text class="label">所问</text>
+    <text class="question">{{question}}</text>
+  </view>
+
+  <!-- 摇卦区 -->
+  <view class="casting-card">
+    <view class="card-heading">
+      <text class="card-title serif">三钱起卦</text>
+      <text class="progress">{{progressText}}</text>
+    </view>
+    <view class="coin-stage {{shaking ? 'shaking' : ''}} {{complete ? 'complete' : ''}}" bindtap="onCoinTap">
+      <text class="kicker">{{kicker}}</text>
+      <view class="coins">
+        <view class="coin" wx:for="{{coinFaces}}" wx:key="index">
+          <text>{{item === 'back' ? '背' : '字'}}</text>
+        </view>
+      </view>
+      <text class="hint">{{hint}}</text>
+      <view class="steps">
+        <view class="step {{index < linesCount ? 'done' : ''}}" wx:for="{{[0,1,2,3,4,5]}}" wx:key="*this"></view>
+      </view>
+      <text class="cast-status">{{castStatus}}</text>
+    </view>
+
+    <!-- 六爻记录 -->
+    <view class="record-heading">
+      <text class="record-title serif">六爻记录</text>
+      <text class="record-note">自下而上，逐爻成卦</text>
+    </view>
+    <view class="rows">
+      <view class="row" wx:for="{{displayRows}}" wx:key="position">
+        <text class="row-position">{{item.position}}</text>
+        <text class="row-combination">{{item.combination}}</text>
+        <view class="row-result">
+          <view class="yao {{item.yang ? 'yang' : 'yin'}} {{item.moving ? 'moving' : ''}}">
+            <view class="bar" wx:if="{{item.yang}}"></view>
+            <block wx:else>
+              <view class="bar half"></view>
+              <view class="bar half"></view>
+            </block>
+          </view>
+          <text class="row-name">{{item.name}}{{item.moving ? '·动' : ''}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 解卦按钮 -->
+  <view class="interpret-wrap">
+    <button class="interpret-button" disabled="{{!complete || readingBusy}}" bindtap="onInterpret">
+      {{readingBusy ? '解卦中…' : '解卦'}}
+    </button>
+    <text class="interpret-hint">{{interpretHint}}</text>
+  </view>
+
+  <!-- 卦象结果 -->
+  <view class="result" wx:if="{{complete && primary}}">
+    <view class="hex-card">
+      <text class="hex-kicker">本卦 · 此刻之象</text>
+      <text class="hex-symbol">{{primary.symbol}}</text>
+      <text class="hex-name serif">{{primary.fullName}}</text>
+      <text class="hex-trigrams">上{{primary.upper.name}} · 下{{primary.lower.name}}</text>
+      <text class="gua-ci" wx:if="{{primaryGuaCi}}">{{primaryGuaCi}}</text>
+    </view>
+    <view class="hex-card">
+      <text class="hex-kicker">变卦 · 变化之象</text>
+      <text class="hex-symbol">{{changed.symbol}}</text>
+      <text class="hex-name serif">{{changed.fullName}}</text>
+      <text class="hex-trigrams">上{{changed.upper.name}} · 下{{changed.lower.name}}</text>
+      <text class="gua-ci" wx:if="{{changedGuaCi}}">{{changedGuaCi}}</text>
+    </view>
+    <text class="change-note">{{changeNote}}</text>
+
+    <!-- AI 解读 -->
+    <view class="reading">
+      <view class="reading-heading">
+        <text class="reading-title serif">解卦 · 回应所问</text>
+        <text class="reading-state">{{readingState}}</text>
+      </view>
+      <text class="reading-question">所问：{{question}}</text>
+      <view class="reading-loading" wx:if="{{readingBusy}}">
+        <text>正在结合所问与卦象解读，请稍候…</text>
+      </view>
+      <text class="reading-error" wx:if="{{readingError}}">{{readingError}}</text>
+      <text class="reading-content" wx:if="{{readingText}}">{{readingText}}</text>
+
+      <!-- 追问循环(FR-05) -->
+      <view class="followup-panel" wx:if="{{followupVisible}}">
+        <text class="followup-title">还有所惑？就此卦追问（剩余 {{followupRemaining}} 次）</text>
+        <textarea
+          class="followup-input"
+          value="{{followupInput}}"
+          maxlength="200"
+          placeholder="就这一卦，把疑问写清楚…"
+          placeholder-class="placeholder"
+          bindinput="onFollowupInput"
+        ></textarea>
+        <view class="followup-actions">
+          <text class="followup-count {{followupCountOver ? 'over' : ''}}">{{followupCount}} / 200</text>
+          <button class="followup-button" disabled="{{followupBusy || !followupInput}}" bindtap="onFollowupSubmit">
+            {{followupBusy ? '追问中…' : '追问'}}
+          </button>
+        </view>
+        <text class="followup-error" wx:if="{{followupError}}">{{followupError}}</text>
+      </view>
+      <view class="followup-closed" wx:if="{{followupClosed}}">
+        <text>此卦已尽，建议心定后另择时再问。</text>
+      </view>
+    </view>
+
+    <view class="disclaimer">
+      <text>内容基于传统文化典籍生成，仅供文化娱乐参考，不构成医疗、法律、投资、婚姻等专业建议。</text>
+    </view>
+  </view>
+</view>

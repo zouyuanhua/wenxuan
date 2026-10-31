@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/ask/index",
+    "pages/cast/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "问玄",
+    "navigationBarBackgroundColor": "#f5f3ed",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f3ed",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
