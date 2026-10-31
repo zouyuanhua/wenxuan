@@ -16,6 +16,7 @@ from starlette.requests import ClientDisconnect
 from starlette.responses import JSONResponse, Response
 
 from hexagram import change_lines, classify_coins, describe_hexagram
+from followup import FollowupError, validate_followup
 from gua_classics import classics_grounding, classics_summary
 from prompt_config import MAX_PROMPT_LENGTH, PromptConfigError, PromptStore, validate_prompt
 
@@ -139,6 +140,10 @@ def canonicalize(body):
             lines.append(classify_coins(item.get("coins")))
         except ValueError:
             raise APIError(400, "INVALID_COINS", "每爻必须包含三枚有效铜钱。") from None
+    try:
+        followup = validate_followup(body.get("followup"))
+    except FollowupError as error:
+        raise APIError(400, "INVALID_FOLLOWUP", str(error)) from None
     return {
         "question": question,
         "primary": describe_hexagram(lines),
@@ -148,6 +153,7 @@ def canonicalize(body):
                    "coins": line["coins"], "combination": COMBINATIONS[line["backCount"]],
                    "name": line["name"], "yang": line["yang"], "moving": line["moving"]}
                   for index, line in enumerate(lines)],
+        "followup": followup,
     }
 
 
@@ -155,10 +161,22 @@ async def interpret(client, api_key, data, system_prompt):
     # FR-03 知识检索层：注入权威卦辞爻辞（64卦数据库），模型只允许依据原文解读（防幻觉）。
     grounding = classics_grounding(data)
     system_content = f"{system_prompt}\n\n{grounding}" if grounding else system_prompt
+    messages = [{"role": "system", "content": system_content},
+                {"role": "user", "content": json.dumps(data, ensure_ascii=False)}]
+    followup = data.get("followup")
+    if followup:
+        # FR-05 追问循环：同一卦象的多轮对话，回答仍受【典籍依据】约束并围绕原问题。
+        system_content += (f"\n\n以下是针对同一卦象的第{followup['index']}次追问；回答仍须仅依据"
+                           "【典籍依据】与既有卦象，围绕用户所问之事；若追问超出卦象所能回答的"
+                           "范围，礼貌说明并引导其回到本卦主题，不展开无关内容。")
+        messages[0] = {"role": "system", "content": system_content}
+        for item in followup["history"]:
+            messages.append({"role": "assistant", "content": item["answer"]})
+            messages.append({"role": "user", "content": f"【追问{item['index']}】{item['question']}"})
+        messages.append({"role": "user", "content": f"【追问{followup['index']}】{followup['question']}"})
     payload = {
         "model": MODEL,
-        "messages": [{"role": "system", "content": system_content},
-                     {"role": "user", "content": json.dumps(data, ensure_ascii=False)}],
+        "messages": messages,
         "thinking": {"type": "disabled"}, "stream": False, "max_tokens": 2200,
     }
     async with client.stream("POST", UPSTREAM_URL, json=payload,

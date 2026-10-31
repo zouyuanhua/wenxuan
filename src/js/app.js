@@ -38,6 +38,13 @@
   const soundToggle = document.getElementById('sound-toggle');
   const disclaimerToggle = document.getElementById('ask-disclaimer-toggle');
   const disclaimerFull = document.getElementById('ask-disclaimer-full');
+  const followupPanel = document.getElementById('followup-panel');
+  const followupTitle = document.getElementById('followup-title');
+  const followupInput = document.getElementById('followup-input');
+  const followupButton = document.getElementById('followup-button');
+  const followupCount = document.getElementById('followup-count');
+  const followupError = document.getElementById('followup-error');
+  const followupClosed = document.getElementById('followup-closed');
   const positions = ['初爻', '二爻', '三爻', '四爻', '五爻', '上爻'];
   const numerals = ['一', '二', '三', '四', '五', '六'];
   const combinations = ['三个字', '两字一背', '两背一字', '三个背'];
@@ -57,6 +64,10 @@
   let selectedCategory = null;
   let soundOn = window.localStorage.getItem('wenxuan.sound') !== 'off';
   let audioContext = null;
+  let followupsUsed = 0;
+  let followingUp = false;
+  const followupHistory = [];
+  const maxFollowups = 3;
 
   function codePointLength(text) {
     return Array.from(text).length;
@@ -447,6 +458,97 @@
       });
   }
 
+  // 追问循环(FR-05):同一卦象最多追问 3 次,超限收尾。
+  function updateFollowupPanel() {
+    if (interpretation === null) {
+      followupPanel.hidden = true;
+      followupClosed.hidden = true;
+      return;
+    }
+    const remaining = maxFollowups - followupsUsed;
+    if (remaining <= 0) {
+      followupPanel.hidden = true;
+      followupClosed.hidden = false;
+      return;
+    }
+    followupClosed.hidden = true;
+    followupPanel.hidden = false;
+    followupTitle.textContent = '还有所惑？就此卦追问（剩余 ' + remaining + ' 次）';
+    followupButton.disabled = followingUp || !followupInput.value.trim();
+  }
+
+  followupButton.addEventListener('click', async () => {
+    const question = followupInput.value.trim();
+    if (followingUp || followupsUsed >= maxFollowups) return;
+    if (!question) {
+      followupError.textContent = '追问内容未落笔，先写下你想问的。';
+      followupError.hidden = false;
+      return;
+    }
+    if (lockedQuestion === null || lines.length !== 6 || interpretation === null) return;
+    followingUp = true;
+    followupButton.disabled = true;
+    followupButton.textContent = '追问中…';
+    followupError.hidden = true;
+    aiReading.dataset.state = 'loading';
+    readingState.textContent = '追问解读中';
+    readingStatus.hidden = false;
+    readingStatusText.textContent = '正在就同一卦象解读你的追问…';
+    updateControls();
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), interpretationTimeout);
+    try {
+      if (window.location.protocol === 'file:') {
+        throw new Error('AI 解卦需要本地服务。请先启动服务，再从下方链接打开页面。');
+      }
+      const response = await fetch('/api/interpret', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: lockedQuestion,
+          lines: lines.map(line => ({ coins: line.coins.slice() })),
+          followup: { index: followupsUsed + 1, question, history: followupHistory.slice() }
+        }),
+        signal: controller.signal
+      });
+      let data;
+      try { data = await response.json(); } catch (error) { if (controller.signal.aborted) throw error; throw new Error('解卦服务返回异常，请稍后重试。'); }
+      if (!response.ok) {
+        const message = data && data.error && typeof data.error.message === 'string' ? data.error.message.slice(0, 300) : '解卦暂未完成，请稍后重试。';
+        throw new Error(message);
+      }
+      const answer = typeof data.interpretation === 'string' ? data.interpretation.trim() : '';
+      if (!answer) throw new Error('暂未收到完整解读，请稍后重试。');
+      followupsUsed += 1;
+      followupHistory.push({ question, answer });
+      renderClassics(data.classics);
+      readingContent.textContent = '【追问' + followupsUsed + '】' + question + '\n\n' + answer;
+      readingState.textContent = '解读完成';
+      aiReading.dataset.state = 'success';
+      readingStatusText.textContent = '追问解读已完成。';
+      followupInput.value = '';
+      followupCount.textContent = '0 / 200';
+    } catch (error) {
+      followupError.textContent = controller.signal.aborted ? '追问等待超时，请重试。' : (error.message || '追问暂未完成，请重试。');
+      followupError.hidden = false;
+    } finally {
+      window.clearTimeout(timeout);
+      followingUp = false;
+      followupButton.textContent = '追问';
+      readingStatus.hidden = true;
+      updateControls();
+      updateFollowupPanel();
+    }
+  });
+
+  followupInput.addEventListener('input', () => {
+    const length = Array.from(followupInput.value.trim()).length;
+    followupCount.textContent = length + ' / 200';
+    followupCount.classList.toggle('is-over', length >= 200);
+    followupError.hidden = true;
+    followupButton.disabled = followingUp || !followupInput.value.trim();
+  });
+
   interpretButton.addEventListener('click', async () => {
     if (lockedQuestion === null || preparing || casting || interpreting || lines.length !== 6) return;
     renderResults();
@@ -505,6 +607,7 @@
       aiReading.dataset.state = 'success';
       readingStatusText.textContent = '解读已完成。';
       renderClassics(data.classics);
+      updateFollowupPanel();
     } catch (error) {
       interpretationFailed = true;
       readingState.textContent = '暂未完成';

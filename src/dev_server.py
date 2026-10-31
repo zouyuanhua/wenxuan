@@ -15,6 +15,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import gua_classics
+from followup import FollowupError, validate_followup
 from hexagram import change_lines, classify_coins, describe_hexagram
 
 ROOT = Path(__file__).resolve().parent
@@ -105,8 +106,24 @@ class PreviewHandler(BaseHTTPRequestHandler):
                               "application/json; charset=utf-8")
         moving = [index + 1 for index, line in enumerate(lines) if line["moving"]]
         data = {"lines": lines, "movingLines": moving}
+        try:
+            followup = validate_followup(body.get("followup"))
+        except FollowupError as error:
+            payload = json.dumps({"error": {"code": "INVALID_FOLLOWUP", "message": str(error)}},
+                                 ensure_ascii=False)
+            return self._send(400, payload, "application/json; charset=utf-8")
+        if followup:
+            ben = gua_classics.GUA_BY_ID.get(gua_classics.hexagram_id(lines)) or {}
+            yao = ben.get("yao_ci") or []
+            quotes = "；".join(yao[position - 1] for position in moving if 0 <= position - 1 < len(yao))
+            interpretation = (f"【本地演示 · 第{followup['index']}次追问 · 引文取自典籍数据库，未接入真实 AI】\n\n"
+                              f"就「{followup['question']}」：仍以本卦卦辞与动爻爻辞为依据——{quotes}。\n\n"
+                              "从卦象看，此问不离原事：建议回到上方「可行建议」，先做能确定的小步，再观其变。\n\n"
+                              "—— 仅供文化娱乐参考，不构成专业建议。")
+        else:
+            interpretation = build_demo_interpretation(lines, moving)
         payload = json.dumps({
-            "interpretation": build_demo_interpretation(lines, moving),
+            "interpretation": interpretation,
             "classics": gua_classics.classics_summary(data),
             "hexagram": {"primary": describe_hexagram(lines),
                          "changed": describe_hexagram(change_lines(lines)),

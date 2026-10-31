@@ -109,6 +109,16 @@
         <div class="reading-status" id="reading-status" role="status" aria-live="polite"><span class="reading-spinner" aria-hidden="true"></span><span id="reading-status-text">正在结合所问与卦象解读，请稍候…</span></div>
         <div class="reading-content" id="reading-content" hidden></div>
         <p class="reading-error" id="reading-error" role="alert" hidden></p>
+        <div class="followup-panel" id="followup-panel" hidden>
+          <p class="followup-title" id="followup-title">还有所惑？就此卦追问（剩余 3 次）</p>
+          <textarea class="followup-input" id="followup-input" rows="2" maxlength="200" placeholder="就这一卦，把疑问写清楚…"></textarea>
+          <div class="followup-actions">
+            <span class="followup-count" id="followup-count">0 / 200</span>
+            <button class="followup-button" id="followup-button" type="button" disabled>追问</button>
+          </div>
+          <p class="followup-error" id="followup-error" role="alert" hidden></p>
+        </div>
+        <p class="followup-closed" id="followup-closed" hidden>此卦已尽，建议心定后另择时再问。</p>
         <a class="reading-service-link" id="reading-service-link" href="http://127.0.0.1:3000" hidden>打开本地服务页面</a>
       </article>
     </section>
