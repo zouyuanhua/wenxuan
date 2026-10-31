@@ -658,6 +658,10 @@
       if (lines.length === 6) {
         const count = lines.filter(item => item.moving).length;
         status.textContent = '六爻已成 · ' + (count ? count + ' 个动爻，以朱砂色标记' : '六爻皆静，阴阳不变');
+        // 六爻纳甲排盘：确定性计算，摇满即展示（不依赖解卦请求与结果）。
+        if (window.PaiPan && typeof window.PaiPan.renderFromCoins === 'function') {
+          window.PaiPan.renderFromCoins(lines.map(item => item.coins.slice()));
+        }
       } else {
         status.textContent = positions[index] + '已定 · ' + combinations[line.backCount] + ' · ' + line.name + (line.moving ? '动爻' : '静爻');
       }
