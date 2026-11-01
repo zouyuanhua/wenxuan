@@ -29,6 +29,11 @@ button svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap
 .method-button { display: flex; align-items: center; gap: 7px; background: none; border: 0; color: #777a70; font-size: 12px; padding: 9px 0 9px 10px; }
 .method-button:hover { color: var(--red); }
 .method-button svg { width: 17px; height: 17px; }
+/* 整程序重开：只在已有卦时可用，视觉上远低于主流程，不提示「随时换一卦」。 */
+.restart-button { background: none; border: 0; color: #a8a599; font: 12px var(--sans); letter-spacing: 2px; padding: 9px 0 9px 12px; transition: color .2s ease; }
+.restart-button:hover:not(:disabled) { color: #7d7a70; }
+.restart-button:disabled { color: #d9d6cd; }
+.restart-button:focus-visible { outline: 1px dashed #b58a55; outline-offset: 3px; }
 main { max-width: 572px; margin: 0 auto; padding: 0 0 26px; }
 .eyebrow { font-size: 10px; letter-spacing: 4px; color: var(--red); display: flex; align-items: center; justify-content: center; gap: 14px; }
 .eyebrow > span { display: inline-block; height: 1px; width: 24px; background: #c7a98f; }
@@ -238,6 +243,12 @@ dialog h2 { font: 400 24px/1.6 var(--serif); letter-spacing: 1px; margin: 13px 0
 .centering-question::before { content: "所问之事"; display: block; margin-bottom: 4px; color: #aaa08b; font-size: 8px; line-height: 1.6; letter-spacing: 1px; }
 .centering-confirm { display: block; width: 100%; min-height: 42px; padding: 12px 14px; border: 1px solid var(--red); border-radius: 5px; background: var(--red); color: #fff8ed; font-size: 12px; line-height: 1.4; letter-spacing: 1px; transition: background-color .2s ease, border-color .2s ease; }
 .centering-confirm:hover { background: #874138; border-color: #874138; }
+.centering-actions { display: flex; gap: 10px; margin-top: 23px; }
+.centering-actions .centering-confirm { width: auto; flex: 1; margin: 0; }
+.centering-cancel { flex: 1; min-height: 42px; padding: 12px 14px; border: 1px solid #ddd4c2; border-radius: 5px; background: transparent; color: #8c8678; font-size: 12px; line-height: 1.4; letter-spacing: 1px; transition: color .2s ease, border-color .2s ease; }
+.centering-cancel:hover { color: #5f5a4e; border-color: #c9bda6; }
+#restart-dialog .centering-description { font-size: 13px; line-height: 2; }
+#restart-dialog .centering-actions button:focus-visible { outline: 1px dashed #b58a55; outline-offset: -4px; }
 
 @keyframes centering-enter {
   from { opacity: 0; transform: translateY(7px); }

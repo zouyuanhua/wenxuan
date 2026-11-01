@@ -30,6 +30,10 @@
   const readingError = document.getElementById('reading-error');
   const serviceLink = document.getElementById('reading-service-link');
   const dialog = document.getElementById('method-dialog');
+  const restartButton = document.getElementById('restart-app');
+  const restartDialog = document.getElementById('restart-dialog');
+  const restartConfirm = document.getElementById('restart-confirm');
+  const restartCancel = document.getElementById('restart-cancel');
   const categoriesBox = document.getElementById('ask-categories');
   const tagline = document.getElementById('ask-tagline');
   const subsBox = document.getElementById('ask-subs');
@@ -71,6 +75,9 @@
   let followingUp = false;
   const followupHistory = [];
   const maxFollowups = 3;
+  // 重开一轮时作废进行中的请求与动画：返回结果按代次丢弃,不会覆盖新一局。
+  let sessionToken = 0;
+  let activeController = null;
 
   function codePointLength(text) {
     return Array.from(text).length;
@@ -340,6 +347,7 @@
     document.body.appendChild(overlay);
     sfx('bell');
     buzz([40, 30, 60]);
+    const token = sessionToken;
     let finished = false;
     let hushed = false;
     const finish = () => {
@@ -347,6 +355,8 @@
       finished = true;
       overlay.classList.add('is-done');
       window.setTimeout(() => overlay.remove(), 180);
+      // 已重开一局:不再锁定问题、不再滚回摇卦区。
+      if (token !== sessionToken) return;
       preparing = false;
       questionHelp.textContent = '诚心已备，轻点铜钱，摇出初爻。';
       status.textContent = '问题已锁定 · 轻点铜钱，摇出初爻';
@@ -436,6 +446,8 @@
   function updateControls() {
     const complete = lines.length === 6;
     const questionLocked = lockedQuestion !== null;
+    // 没有卦就没有「重开」的意义：初始态保持禁用,避免暗示可随时改主意。
+    restartButton.disabled = !questionLocked;
     progress.textContent = lines.length + ' / 6 爻';
     control.disabled = !questionLocked || preparing || casting || complete;
     interpretButton.disabled = !questionLocked || preparing || casting || !complete || interpreting;
@@ -458,6 +470,84 @@
       hint.textContent = !questionLocked ? '先在问事台抽签写下所问' : preparing ? '专注所问，静候起卦' : complete ? '六爻已成，可点击下方「解卦」' : (lines.length ? '再点任意铜钱，摇出' : '点击任意铜钱，摇出') + positions[lines.length];
     }
     control.setAttribute('aria-label', !questionLocked ? '请先在问事台诚心发问' : preparing ? '疏文已焚，静候起卦' : complete ? '六爻已成，铜钱已锁定' : '第' + (lines.length + 1) + '次，点击三枚铜钱摇出' + positions[lines.length]);
+  }
+
+  // 整程序重开：清空所问、六爻、排盘与解读，回到问事台最初态。
+  // 进行中的解卦/追问按代次作废,旧响应不会写回新一局。
+  function restartAll() {
+    sessionToken += 1;
+    if (activeController) {
+      try { activeController.abort(); } catch (error) { /* 已结束的请求无需处理 */ }
+      activeController = null;
+    }
+    const overlay = document.querySelector('.burn-overlay');
+    if (overlay) overlay.remove();
+
+    lockedQuestion = null;
+    requestQuestion = null;
+    preparing = false;
+    casting = false;
+    interpreting = false;
+    interpretation = null;
+    interpretationFailed = false;
+    reviewing = false;
+    selectedCategory = null;
+    followupsUsed = 0;
+    followingUp = false;
+    followupHistory.length = 0;
+    lines.length = 0;
+    rows.forEach(resetRow);
+
+    questionInput.value = '';
+    questionInput.readOnly = false;
+    questionInput.removeAttribute('aria-invalid');
+    questionSection.classList.remove('is-locked', 'has-error');
+    questionState.textContent = '';
+    lockQuestionLabel.textContent = '诚心已备 · 起卦';
+    tagline.textContent = '';
+    tagline.hidden = true;
+    subsBox.replaceChildren();
+    subsBox.hidden = true;
+    Array.from(categoriesBox.children).forEach(element => {
+      element.classList.remove('is-selected');
+      element.setAttribute('aria-selected', 'false');
+    });
+
+    resultSection.hidden = true;
+    document.getElementById('moving-count').textContent = '';
+    document.getElementById('change-explanation').textContent = '';
+    renderClassics(null);
+    if (window.PaiPan && typeof window.PaiPan.clear === 'function') window.PaiPan.clear();
+
+    aiReading.hidden = true;
+    aiReading.removeAttribute('data-state');
+    aiReading.removeAttribute('aria-busy');
+    readingState.textContent = '解读中';
+    readingQuestion.textContent = '';
+    readingStatus.hidden = true;
+    readingStatusText.textContent = '正在结合所问与卦象解读，请稍候…';
+    readingContent.replaceChildren();
+    readingContent.hidden = true;
+    readingError.textContent = '';
+    readingError.hidden = true;
+    serviceLink.hidden = true;
+
+    followupPanel.hidden = true;
+    followupClosed.hidden = true;
+    followupInput.value = '';
+    followupCount.textContent = '0 / 200';
+    followupButton.textContent = '追问';
+    followupButton.disabled = true;
+    followupError.textContent = '';
+    followupError.hidden = true;
+
+    status.textContent = '诚心发问后，三枚铜钱同摇成爻。';
+    stage.classList.remove('is-shaking', 'is-settled', 'is-complete');
+    coins.forEach(coin => setCoinFace(coin, 'front'));
+    updateControls();
+    refreshValidity();
+    window.scrollTo({ top: 0, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+    questionInput.focus({ preventScroll: true });
   }
 
   function renderRow(index, line) {
@@ -684,11 +774,13 @@
       return;
     }
     if (lockedQuestion === null || lines.length !== 6 || interpretation === null) return;
+    const token = sessionToken;
     followingUp = true;
     followupButton.disabled = true;
     followupButton.textContent = '审阅中…';
     followupError.hidden = true;
     const review = await reviewQuestion(question);
+    if (token !== sessionToken) return;
     if (review.verdict === 'block') {
       followingUp = false;
       followupButton.textContent = '追问';
@@ -705,6 +797,7 @@
     readingStatusText.textContent = '正在就同一卦象解读你的追问…';
     updateControls();
     const controller = new AbortController();
+    activeController = controller;
     const timeout = window.setTimeout(() => controller.abort(), interpretationTimeout);
     try {
       if (window.location.protocol === 'file:') {
@@ -731,6 +824,7 @@
         const message = data && data.error && typeof data.error.message === 'string' ? data.error.message.slice(0, 300) : '解卦暂未完成，请稍后重试。';
         throw new Error(message);
       }
+      if (token !== sessionToken) return;
       const answer = typeof data.interpretation === 'string' ? data.interpretation.trim() : '';
       if (!answer) throw new Error('暂未收到完整解读，请稍后重试。');
       followupsUsed += 1;
@@ -743,15 +837,19 @@
       followupInput.value = '';
       followupCount.textContent = '0 / 200';
     } catch (error) {
+      if (token !== sessionToken) return;
       followupError.textContent = controller.signal.aborted ? '追问等待超时，请重试。' : (error.message || '追问暂未完成，请重试。');
       followupError.hidden = false;
     } finally {
       window.clearTimeout(timeout);
-      followingUp = false;
-      followupButton.textContent = '追问';
-      readingStatus.hidden = true;
-      updateControls();
-      updateFollowupPanel();
+      if (activeController === controller) activeController = null;
+      if (token === sessionToken) {
+        followingUp = false;
+        followupButton.textContent = '追问';
+        readingStatus.hidden = true;
+        updateControls();
+        updateFollowupPanel();
+      }
     }
   });
 
@@ -772,6 +870,7 @@
     resultSection.focus({ preventScroll: true });
     if (interpretation !== null) return;
 
+    const token = sessionToken;
     interpreting = true;
     interpretationFailed = false;
     aiReading.dataset.state = 'loading';
@@ -784,6 +883,7 @@
     serviceLink.hidden = true;
     updateControls();
     const controller = new AbortController();
+    activeController = controller;
     const timeout = window.setTimeout(() => controller.abort(), interpretationTimeout);
     try {
       if (window.location.protocol === 'file:') {
@@ -814,6 +914,7 @@
       if (!data || typeof data.interpretation !== 'string' || !data.interpretation.trim()) {
         throw new Error('暂未收到完整解读，请稍后重试。');
       }
+      if (token !== sessionToken) return;
       interpretation = data.interpretation.trim();
       // Model output is text, never executable HTML or untrusted markup.
       renderReading(readingContent, interpretation);
@@ -824,6 +925,7 @@
       renderClassics(data.classics);
       updateFollowupPanel();
     } catch (error) {
+      if (token !== sessionToken) return;
       interpretationFailed = true;
       readingState.textContent = '暂未完成';
       aiReading.dataset.state = 'error';
@@ -831,10 +933,13 @@
       readingError.hidden = false;
     } finally {
       window.clearTimeout(timeout);
-      interpreting = false;
-      aiReading.setAttribute('aria-busy', 'false');
-      readingStatus.hidden = true;
-      updateControls();
+      if (activeController === controller) activeController = null;
+      if (token === sessionToken) {
+        interpreting = false;
+        aiReading.setAttribute('aria-busy', 'false');
+        readingStatus.hidden = true;
+        updateControls();
+      }
     }
   });
 
@@ -847,6 +952,7 @@
     const index = lines.length;
     const previousFaces = coins.map(coin => coin.querySelector('use').getAttribute('href').endsWith('back') ? 'back' : 'front');
     const restoreFocus = document.activeElement === control;
+    const token = sessionToken;
     casting = true;
     updateControls();
     stage.classList.remove('is-settled');
@@ -867,6 +973,7 @@
         await delay(650);
       }
       window.clearInterval(interval);
+      if (token !== sessionToken) return;
       coins.forEach((coin, coinIndex) => setCoinFace(coin, line.coins[coinIndex]));
       renderRow(index, line);
       lines.push(line);
@@ -907,5 +1014,21 @@
     if (event.target !== dialog) return;
     const rect = dialog.getBoundingClientRect();
     if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+  });
+
+  // 重开前先确认：清空的是整局所问、卦象与解读，不只是改问题。
+  restartButton.addEventListener('click', () => {
+    if (lockedQuestion === null) return;
+    restartDialog.showModal();
+  });
+  restartCancel.addEventListener('click', () => restartDialog.close());
+  restartConfirm.addEventListener('click', () => {
+    restartDialog.close();
+    restartAll();
+  });
+  restartDialog.addEventListener('click', event => {
+    if (event.target !== restartDialog) return;
+    const rect = restartDialog.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) restartDialog.close();
   });
 })();

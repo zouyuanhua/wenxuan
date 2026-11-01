@@ -52,6 +52,7 @@
     <div class="header-actions">
       <button class="method-button" id="open-method" type="button" aria-haspopup="dialog"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4.5h5a3 3 0 0 1 2 1 3 3 0 0 1 2-1h5v11h-5a3 3 0 0 0-2 1 3 3 0 0 0-2-1H3Z M10 5.5v11"/></svg>起卦方法</button>
       <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7.5h3l4-3.5v12l-4-3.5H3ZM13.5 7a4 4 0 0 1 0 6M15.5 5a7 7 0 0 1 0 10"/><path class="mute-line" d="M3.5 16.5 16.5 3.5"/></svg><span>音效</span></button>
+      <button class="restart-button" id="restart-app" type="button" disabled title="清空当前所问、卦象、排盘与解读，从问事台重新开始">重新开始</button>
     </div>
   </header>
 
@@ -136,6 +137,16 @@
     <ol class="method-steps"><li><span>01</span><div><h3>抽签写下心事</h3><p>先在问事台选一支分类签，再用模板或自由写下 5–200 字的心事；自由来问可选「其他」。点击「诚心已备 · 起卦」，疏文焚化后不可修改，铜钱即可开始摇卦。</p></div></li><li><span>02</span><div><h3>三枚铜钱，轻摇六次</h3><p>轻点任意一枚铜钱，三钱同时翻转，落成一爻。同样的三枚铜钱重复摇六次，记录从最下方初爻依次向上，直到上爻。</p></div></li><li><span>03</span><div><h3>观本卦，知其变</h3><p>阳爻为一条实线，阴爻为两段断线。动爻以朱砂红标记，阴阳互换后形成变卦。六爻成卦后铜钱锁定，点击「解卦」查看本卦、变卦与动爻说明。</p></div></li></ol>
     <div class="method-note"><svg aria-hidden="true" viewBox="0 0 64 64"><use href="#coin-front"/></svg><p><strong>字面</strong>有「乾隆通寶」四字<br><strong>背面</strong>为纹饰图案</p></div>
     <button class="dialog-confirm" id="confirm-method" type="button">明白了，静心起卦</button>
+  </dialog>
+
+  <dialog class="centering-dialog" id="restart-dialog" aria-labelledby="restart-title">
+    <p class="centering-eyebrow">重 新 开 始</p>
+    <h2 id="restart-title">从问事台重新来过？</h2>
+    <p class="centering-description">当前所问、卦象、排盘与解读将一并清空，<br>此后需重新抽签写下心事。</p>
+    <div class="centering-actions">
+      <button class="centering-cancel" id="restart-cancel" type="button">暂不</button>
+      <button class="centering-confirm" id="restart-confirm" type="button">从头开始</button>
+    </div>
   </dialog>
 </body>
 </html>
