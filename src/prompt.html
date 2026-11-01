@@ -27,6 +27,12 @@
         <div class="editor-meta"><span id="prompt-help">修改后点击「立即保存」，无需重启服务。</span><span class="character-count" id="prompt-count">0 / 20,000</span></div>
         <p class="message error-message" id="prompt-error" role="alert" hidden></p>
         <div class="editor-actions"><p id="saved-time">保存后用于此后发起的解卦。</p><div class="action-group"><button class="text-button" id="reload-prompt" type="button" hidden>重新加载</button><button class="secondary-button" id="save-prompt" type="button" disabled>立即保存</button></div></div>
+        <div class="panel-heading" style="margin-top:22px"><div><p class="section-number">01b / 守门</p><h2 id="guard-title">输入审查</h2></div><span class="save-state" id="guard-status" data-state="loading" role="status" aria-live="polite">正在加载</span></div>
+        <label class="field-label" for="guard-editor">守门提示词 · 输入审查</label>
+        <textarea id="guard-editor" class="prompt-editor" maxlength="20000" rows="12" placeholder="正在读取守门提示词，你也可以先在此输入草稿…" spellcheck="false" aria-describedby="guard-help guard-error"></textarea>
+        <div class="editor-meta"><span id="guard-help">起卦前单独执行，只判断是否夹带提示注入；与解卦提示词分开保存。</span><span class="character-count" id="guard-count">0 / 20,000</span></div>
+        <p class="message error-message" id="guard-error" role="alert" hidden></p>
+        <div class="editor-actions"><p id="guard-saved-time">保存后用于此后的起卦审查。</p><div class="action-group"><button class="secondary-button" id="save-guard" type="button" disabled>保存守门提示词</button></div></div>
       </section>
       <section class="panel debug-panel" aria-labelledby="debug-title">
         <div class="panel-heading"><div><p class="section-number">02 / 在线调试</p><h2 id="debug-title">试一卦，观其解</h2></div><span class="draft-label">使用当前草稿</span></div>
