@@ -1,0 +1,123 @@
+/* 解读正文的分块排版:
+   卦象解析(依据)→ 三章(智者之言)→ 追问(同一卦象下的对话延续)。
+   识别不到固定结构时,app.js 回退为纯文本,不依赖本文件。 */
+
+.reading-content { display: flex; flex-direction: column; gap: 16px; white-space: normal; }
+
+.reading-preface {
+  margin: 0;
+  color: #6f6d5f;
+  font-size: 12px;
+  line-height: 2;
+}
+
+/* 卦象解析:先读懂排盘的依据段,语气克制,视觉上比三章更淡。 */
+.reading-analysis {
+  position: relative;
+  padding: 12px 15px 13px 17px;
+  background: #faf7ef;
+  border: 1px solid rgba(178, 168, 146, .38);
+  border-radius: 3px;
+}
+
+.reading-analysis::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: #b3a68c;
+  opacity: .75;
+}
+
+.reading-analysis-title {
+  margin: 0 0 8px;
+  color: #7a7260;
+  font: 500 13px/1.6 var(--serif);
+  letter-spacing: 3px;
+}
+
+.reading-analysis .reading-paragraph {
+  color: #62635a;
+  font-size: 12.5px;
+  line-height: 2;
+}
+
+.reading-section {
+  position: relative;
+  padding: 13px 16px 14px 18px;
+  background: #fffdf8;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.reading-section::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 13px;
+  bottom: 13px;
+  width: 2px;
+  background: var(--red);
+  opacity: .5;
+}
+
+.reading-section-title {
+  margin: 0 0 9px;
+  color: var(--red);
+  font: 500 14px/1.6 var(--serif);
+  letter-spacing: 3px;
+}
+
+/* 追问块:同一卦象下的对话延续,追加在首次解读之后,不覆盖前文。 */
+.reading-followup {
+  position: relative;
+  padding: 12px 15px 13px 17px;
+  background: #fffdf8;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.reading-followup::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: #8a8270;
+  opacity: .55;
+}
+
+.reading-followup-title {
+  margin: 0 0 7px;
+  color: #8a8270;
+  font: 500 12px/1.6 var(--serif);
+  letter-spacing: 3px;
+}
+
+.reading-followup-question {
+  margin: 0 0 9px;
+  color: var(--red);
+  font-size: 12.5px;
+  line-height: 1.95;
+}
+
+.reading-paragraph {
+  margin: 0 0 7px;
+  color: #57584c;
+  font-size: 13px;
+  line-height: 2.05;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.reading-paragraph:last-child { margin-bottom: 0; }
+
+@media (max-width: 640px) {
+  .reading-content { gap: 13px; }
+  .reading-section, .reading-analysis, .reading-followup { padding: 12px 13px 13px 15px; }
+  .reading-section-title { font-size: 13px; letter-spacing: 2px; }
+  .reading-paragraph { font-size: 12px; line-height: 2; }
+}

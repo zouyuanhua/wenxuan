@@ -28,7 +28,29 @@ class TestFollowupValidation(unittest.TestCase):
 
     def test_first_followup_normalized(self):
         result = validate_followup({"question": "  这份工作要不要换？  "})
-        self.assertEqual(result, {"index": 1, "question": "这份工作要不要换？", "history": []})
+        self.assertEqual(result, {"index": 1, "question": "这份工作要不要换？",
+                                  "history": [], "initial": None})
+
+    def test_initial_reading_is_carried_and_truncated(self):
+        result = validate_followup({"question": "再问一句",
+                                    "initial": {"question": "原问题", "answer": "甲" * 5000}})
+        self.assertEqual(result["initial"]["question"], "原问题")
+        self.assertEqual(len(result["initial"]["answer"]), 2200)
+
+    def test_malformed_initial_is_ignored(self):
+        for value in ("x", [], {"question": "", "answer": "答"}, {"question": "问"}):
+            with self.subTest(value=value):
+                result = validate_followup({"question": "问", "initial": value})
+                self.assertIsNone(result["initial"])
+
+    def test_history_entries_carry_round_index(self):
+        result = validate_followup({"question": "第三次", "history": history(2)})
+        self.assertEqual([item["index"] for item in result["history"]], [1, 2])
+
+    def test_history_answer_is_truncated_for_context(self):
+        result = validate_followup({"question": "问",
+                                    "history": [{"question": "q", "answer": "乙" * 5000}]})
+        self.assertEqual(len(result["history"][0]["answer"]), 2000)
 
     def test_third_followup_allowed_with_two_history_entries(self):
         result = validate_followup({"question": "还剩最后一次吗？", "history": history(2)})

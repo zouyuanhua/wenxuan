@@ -7,6 +7,12 @@
   const saveButton = document.getElementById('save-prompt');
   const reloadButton = document.getElementById('reload-prompt');
   const savedTime = document.getElementById('saved-time');
+  const guardEditor = document.getElementById('guard-editor');
+  const guardStatus = document.getElementById('guard-status');
+  const guardCount = document.getElementById('guard-count');
+  const guardError = document.getElementById('guard-error');
+  const guardSaveButton = document.getElementById('save-guard');
+  const guardSavedTime = document.getElementById('guard-saved-time');
   const debugForm = document.getElementById('debug-form');
   const debugQuestion = document.getElementById('debug-question');
   const debugButton = document.getElementById('debug-button');
@@ -34,6 +40,12 @@
   let debugging = false;
   let debugFailed = false;
   let debugSucceeded = false;
+  let guardSaved = null;
+  let guardSaving = false;
+  let guardLoading = false;
+  let guardLoadFailed = false;
+  let guardFailure = '';
+  let guardRevision = 0;
 
   positions.forEach((position, index) => {
     const row = document.createElement('div');
@@ -182,6 +194,107 @@
     }
   }
 
+  function guardDirty() {
+    return guardSaved === null ? guardRevision > 0 : guardEditor.value !== guardSaved;
+  }
+
+  function validGuard(value) {
+    return value.trim().length > 0 && value.length <= maxLength;
+  }
+
+  function updateGuardUI() {
+    const value = guardEditor.value;
+    const valid = validGuard(value);
+    guardCount.textContent = value.length.toLocaleString('zh-CN') + ' / ' + maxLength.toLocaleString('zh-CN');
+    guardSaveButton.disabled = offline || guardLoading || guardSaving || !valid || !guardDirty();
+    guardSaveButton.textContent = guardSaving ? '保存中…' : guardFailure ? '重试保存' : '保存守门提示词';
+    let state = 'saved';
+    let message = '已保存';
+    let error = '';
+    if (offline) {
+      state = 'error'; message = '需要本地服务';
+    } else if (guardLoading) {
+      state = 'loading'; message = '正在加载';
+    } else if (guardSaving) {
+      state = 'saving'; message = '保存中';
+    } else if (guardDirty() && !valid) {
+      state = 'invalid'; message = '尚未保存';
+      error = !value.trim() ? '守门提示词不能为空，请输入内容后保存。'
+        : '守门提示词最多为 ' + maxLength.toLocaleString('zh-CN') + ' 个字符。';
+    } else if (guardFailure) {
+      state = 'error'; message = '保存失败'; error = guardFailure;
+    } else if (guardDirty()) {
+      state = 'dirty'; message = '待保存';
+    } else if (guardLoadFailed) {
+      state = 'error'; message = '加载失败'; error = '守门提示词读取失败，请刷新后重试。';
+    }
+    guardStatus.dataset.state = state;
+    guardStatus.textContent = message;
+    guardError.textContent = error;
+    guardError.hidden = !error;
+  }
+
+  async function loadGuardPrompt() {
+    if (offline || guardLoading || guardSaving) return;
+    const keepDraft = guardDirty();
+    guardLoading = true;
+    guardFailure = '';
+    updateGuardUI();
+    try {
+      const data = await fetchJSON('/api/settings/guard-prompt', { method: 'GET' }, 15000);
+      if (!data || typeof data.guardPrompt !== 'string' || !data.guardPrompt.trim()) {
+        throw new Error('守门提示词配置格式异常，请重试加载。');
+      }
+      if (Number.isInteger(data.maxLength) && data.maxLength > 0) maxLength = data.maxLength;
+      guardEditor.maxLength = maxLength;
+      if (!keepDraft) guardEditor.value = data.guardPrompt;
+      guardSaved = data.guardPrompt;
+      guardLoadFailed = false;
+    } catch (error) {
+      guardLoadFailed = true;
+      guardFailure = error.message;
+    } finally {
+      guardLoading = false;
+      updateGuardUI();
+    }
+  }
+
+  async function saveGuardPrompt() {
+    if (offline || guardLoading || guardSaving || !guardDirty() || !validGuard(guardEditor.value)) return;
+    const draft = guardEditor.value;
+    guardSaving = true;
+    guardFailure = '';
+    updateGuardUI();
+    try {
+      const data = await fetchJSON('/api/settings/guard-prompt', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guardPrompt: draft })
+      }, 15000);
+      if (!data || typeof data.guardPrompt !== 'string' || !data.guardPrompt.trim()) {
+        throw new Error('保存结果异常，请重试。');
+      }
+      guardSaved = data.guardPrompt;
+      if (!guardDirty()) guardEditor.value = data.guardPrompt;
+      guardLoadFailed = false;
+      guardFailure = '';
+      guardSavedTime.textContent = '已于 '
+        + new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date())
+        + ' 保存，此后的起卦审查立即生效。';
+    } catch (error) {
+      guardFailure = error.message;
+    } finally {
+      guardSaving = false;
+      updateGuardUI();
+    }
+  }
+
+  guardEditor.addEventListener('input', () => {
+    guardRevision++;
+    guardFailure = '';
+    updateGuardUI();
+  });
+  guardSaveButton.addEventListener('click', saveGuardPrompt);
+
   editor.addEventListener('input', () => {
     revision++;
     saveFailure = '';
@@ -191,7 +304,7 @@
   reloadButton.addEventListener('click', loadPrompt);
   debugQuestion.addEventListener('input', updateUI);
   window.addEventListener('beforeunload', event => {
-    if (!offline && (dirty() || saving)) {
+    if (!offline && (dirty() || guardDirty() || saving || guardSaving)) {
       event.preventDefault();
       event.returnValue = '';
     }
@@ -283,11 +396,14 @@
   if (offline) {
     document.getElementById('service-guide').hidden = false;
     editor.disabled = true;
+    guardEditor.disabled = true;
     debugQuestion.disabled = true;
     selectors.forEach(select => { select.disabled = true; });
     debugStatus.textContent = '通过本地服务打开后，即可在线调试。';
+    updateGuardUI();
     updateUI();
   } else {
     loadPrompt();
+    loadGuardPrompt();
   }
 })();
