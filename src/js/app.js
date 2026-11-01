@@ -558,8 +558,9 @@
     }
   }
 
-  // 首次解读先「卦象解析」再三章;识别不到固定结构时退回纯文本。
-  const READING_ANALYSIS_TITLE = '卦象解析';
+  // 首次解读先「六爻断卦」再三章;历史提示词可能写「卦象解析」,两者都认。
+  // 章节标题偶尔漏写「一、」这类序号,剥掉序号后仍按标题识别,避免整段退回纯文本。
+  const READING_ANALYSIS_TITLES = ['六爻断卦', '卦象解析'];
   const READING_SECTIONS = ['一、卦象照见', '二、宽厚以待', '三、可行之路'];
 
   function renderReading(container, text) {
@@ -569,16 +570,19 @@
     let current = null;
     text.split(/\r?\n/).forEach(line => {
       const trimmed = line.trim().replace(/^[#*\s]+/, '').replace(/[*\s]+$/, '');
-      if (trimmed === READING_ANALYSIS_TITLE ||
-          (trimmed.startsWith(READING_ANALYSIS_TITLE) &&
-           trimmed.length <= READING_ANALYSIS_TITLE.length + 12)) {
-        const rest = trimmed.slice(READING_ANALYSIS_TITLE.length).replace(/^[：:，,、\s]+/, '').trim();
-        analysis = { paragraphs: rest ? [rest] : [] };
+      const analysisTitle = READING_ANALYSIS_TITLES.find(item =>
+        trimmed === item || (trimmed.startsWith(item) && trimmed.length <= item.length + 12));
+      if (analysisTitle) {
+        const rest = trimmed.slice(analysisTitle.length).replace(/^[：:，,、\s]+/, '').trim();
+        analysis = { title: analysisTitle, paragraphs: rest ? [rest] : [] };
         current = analysis;
         return;
       }
-      const title = READING_SECTIONS.find(item =>
-        trimmed === item || (trimmed.startsWith(item) && trimmed.length <= item.length + 12));
+      const title = READING_SECTIONS.find(item => {
+        const bare = item.replace(/^[一二三四五六七八九十]+、/, '');
+        return [item, bare].some(key =>
+          trimmed === key || (trimmed.startsWith(key) && trimmed.length <= key.length + 12));
+      });
       if (title) {
         const rest = trimmed.slice(title.length).replace(/^[：:，,、\s]+/, '').trim();
         current = { title: title, paragraphs: rest ? [rest] : [] };
@@ -605,7 +609,7 @@
       analysisBlock.className = 'reading-analysis';
       const analysisHeading = document.createElement('h3');
       analysisHeading.className = 'reading-analysis-title';
-      analysisHeading.textContent = READING_ANALYSIS_TITLE;
+      analysisHeading.textContent = analysis.title || '六爻断卦';
       analysisBlock.appendChild(analysisHeading);
       analysis.paragraphs.forEach(para => {
         const p = document.createElement('p');
