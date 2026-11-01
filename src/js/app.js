@@ -75,6 +75,9 @@
   let followingUp = false;
   const followupHistory = [];
   const maxFollowups = 3;
+  // 摇满六爻时算出的排盘：页面展示与解卦请求共用同一份。
+  // 排盘含起卦时刻的干支、旬空、月建与六神起法，解卦时重算会因时间推进而漂移。
+  let paipanData = null;
   // 重开一轮时作废进行中的请求与动画：返回结果按代次丢弃,不会覆盖新一局。
   let sessionToken = 0;
   let activeController = null;
@@ -495,6 +498,7 @@
     followupsUsed = 0;
     followingUp = false;
     followupHistory.length = 0;
+    paipanData = null;
     lines.length = 0;
     rows.forEach(resetRow);
 
@@ -809,6 +813,7 @@
         body: JSON.stringify({
           question: lockedQuestion,
           lines: lines.map(line => ({ coins: line.coins.slice() })),
+          paipan: paipanData || undefined,
           followup: {
             index: followupsUsed + 1,
             question: askFollowup,
@@ -896,7 +901,8 @@
         body: JSON.stringify({
           question: lockedQuestion,
           cleanQuestion: requestQuestion || undefined,
-          lines: lines.map(line => ({ coins: line.coins.slice() }))
+          lines: lines.map(line => ({ coins: line.coins.slice() })),
+          paipan: paipanData || undefined
         }),
         signal: controller.signal
       });
@@ -980,9 +986,13 @@
       if (lines.length === 6) {
         const count = lines.filter(item => item.moving).length;
         status.textContent = '六爻已成 · ' + (count ? count + ' 个动爻，以朱砂色标记' : '六爻皆静，阴阳不变');
-        // 六爻纳甲排盘：确定性计算，摇满即展示（不依赖解卦请求与结果）。
+        // 六爻纳甲排盘：摇满即算一次，展示与解卦请求共用这份数据。
+        const castCoins = lines.map(item => item.coins.slice());
+        if (window.PaiPan && typeof window.PaiPan.buildFromCoins === 'function') {
+          paipanData = window.PaiPan.buildFromCoins(castCoins);
+        }
         if (window.PaiPan && typeof window.PaiPan.renderFromCoins === 'function') {
-          window.PaiPan.renderFromCoins(lines.map(item => item.coins.slice()));
+          window.PaiPan.renderFromCoins(castCoins);
         }
       } else {
         status.textContent = positions[index] + '已定 · ' + combinations[line.backCount] + ' · ' + line.name + (line.moving ? '动爻' : '静爻');

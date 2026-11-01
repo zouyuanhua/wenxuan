@@ -6,6 +6,7 @@ import json
 import logging
 import math
 import os
+import re
 from pathlib import Path
 
 import httpx
@@ -133,6 +134,128 @@ async def read_request_json(request, max_bytes=MAX_REQUEST_BYTES):
         raise APIError(400, "INVALID_JSON", "请求内容无法读取，请重新提交。") from None
 
 
+class PaipanError(Exception):
+    """排盘数据结构不合法。"""
+
+
+_PAIPAN_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _paipan_text(value, limit=12, allow_empty=False):
+    if type(value) is not str:
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    text = value.strip()
+    if not text:
+        if allow_empty:
+            return ""
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    if len(text) > limit or _PAIPAN_CONTROL.search(text):
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    return text
+
+
+def _paipan_ints(value, size, low, high):
+    if not isinstance(value, list) or len(value) != size:
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    result = []
+    for item in value:
+        if type(item) is not int or item < low or item > high:
+            raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+        result.append(item)
+    return result
+
+
+def _paipan_texts(value, size, limit):
+    if not isinstance(value, list) or len(value) != size:
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    return [_paipan_text(item, limit) for item in value]
+
+
+def validate_paipan(value, moving_lines):
+    """校验前端在摇满六爻时算好的六爻排盘。
+
+    排盘含起卦时刻的日干支、旬空、月建与六神起法，服务端重算会因时间推进而漂移，
+    因此以请求携带的排盘为准；这里只做白名单重建与动爻位置一致性核对，防止伪造或错配。
+    未携带时返回 None（兼容旧前端），此时不注入 paipan。
+    """
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    raw_dong = value.get("dong")
+    if not isinstance(raw_dong, list) or len(raw_dong) > 6:
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    dong = _paipan_ints(raw_dong, len(raw_dong), 0, 5)
+    # 动爻位置必须与重算的卦象一致，否则这份排盘不可信。
+    if sorted(index + 1 for index in dong) != sorted(moving_lines):
+        raise PaipanError("排盘与卦象不一致，请刷新页面后重试。")
+    date = value.get("date")
+    if not isinstance(date, dict):
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    gz = date.get("gz")
+    if not isinstance(gz, dict):
+        raise PaipanError("排盘数据格式异常，请刷新页面后重试。")
+    paipan = {
+        "name": _paipan_text(value.get("name")),
+        "type": _paipan_text(value.get("type"), allow_empty=True),
+        "gong": _paipan_text(value.get("gong"), 4),
+        "gongWuxing": _paipan_text(value.get("gongWuxing"), 4),
+        "shiy": _paipan_ints(value.get("shiy"), 2, 1, 6),
+        "qinx": _paipan_texts(value.get("qinx"), 6, 8),
+        "qin6": _paipan_texts(value.get("qin6"), 6, 4),
+        "god6": _paipan_texts(value.get("god6"), 6, 4),
+        "dong": dong,
+        "date": {
+            "gz": {key: _paipan_text(gz.get(key), 4) for key in ("year", "month", "day", "hour")},
+            "xkong": _paipan_text(date.get("xkong"), 4),
+            "yueJian": _paipan_text(date.get("yueJian"), 4),
+        },
+    }
+    paipan["shen"] = None
+    shen = value.get("shen")
+    if isinstance(shen, dict):
+        yao, zhi = shen.get("yao"), shen.get("zhi")
+        if type(yao) is int and 1 <= yao <= 6 and type(zhi) is str:
+            try:
+                paipan["shen"] = {"yao": yao, "zhi": _paipan_text(zhi, 2)}
+            except PaipanError:
+                paipan["shen"] = None
+    shi_shen = value.get("shiShen")
+    paipan["shiShen"] = shi_shen if type(shi_shen) is int and 1 <= shi_shen <= 6 else None
+    paipan["hide"] = None
+    hide = value.get("hide")
+    if isinstance(hide, dict):
+        hide_name = hide_qin6 = hide_qinx = None
+        try:
+            hide_name = _paipan_text(hide.get("name"))
+            hide_qin6 = _paipan_texts(hide.get("qin6"), 6, 4)
+            hide_qinx = _paipan_texts(hide.get("qinx"), 6, 8)
+        except PaipanError:
+            hide_name = None
+        if hide_name:
+            seat = hide.get("seat")
+            seats = ([item for item in seat if type(item) is int and 0 <= item <= 5]
+                     if isinstance(seat, list) else [])
+            paipan["hide"] = {"name": hide_name, "qin6": hide_qin6,
+                              "qinx": hide_qinx, "seat": seats}
+    paipan["bian"] = None
+    bian = value.get("bian")
+    if isinstance(bian, dict):
+        bian_name = bian_qin6 = bian_qinx = bian_shiy = None
+        try:
+            bian_name = _paipan_text(bian.get("name"))
+            bian_type = _paipan_text(bian.get("type"), allow_empty=True)
+            bian_qin6 = _paipan_texts(bian.get("qin6"), 6, 4)
+            bian_qinx = _paipan_texts(bian.get("qinx"), 6, 8)
+            bian_shiy = _paipan_ints(bian.get("shiy"), 2, 1, 6)
+        except PaipanError:
+            bian_name = None
+        if bian_name:
+            paipan["bian"] = {"name": bian_name, "type": bian_type, "qin6": bian_qin6,
+                              "qinx": bian_qinx, "shiy": bian_shiy}
+    return paipan
+
+
 def canonicalize(body):
     if not isinstance(body, dict) or type(body.get("question")) is not str:
         raise APIError(400, "INVALID_QUESTION", "请输入1至2000字的问题。")
@@ -168,18 +291,27 @@ def canonicalize(body):
             clean_question = None
     else:
         clean_question = None
-    return {
+    moving_lines = [index + 1 for index, line in enumerate(lines) if line["moving"]]
+    try:
+        paipan = validate_paipan(body.get("paipan"), moving_lines)
+    except PaipanError as error:
+        raise APIError(400, "INVALID_PAIPAN", str(error)) from None
+    result = {
         "question": question,
         "cleanQuestion": clean_question,
         "primary": describe_hexagram(lines),
         "changed": describe_hexagram(change_lines(lines)),
-        "movingLines": [index + 1 for index, line in enumerate(lines) if line["moving"]],
+        "movingLines": moving_lines,
         "lines": [{"position": index + 1, "positionName": POSITIONS[index],
                    "coins": line["coins"], "combination": COMBINATIONS[line["backCount"]],
                    "name": line["name"], "yang": line["yang"], "moving": line["moving"]}
                   for index, line in enumerate(lines)],
         "followup": followup,
     }
+    # 摇卦时生成的排盘与页面显示一致；未携带时保持旧行为，不注入 paipan。
+    if paipan is not None:
+        result["paipan"] = paipan
+    return result
 
 
 async def interpret(client, api_key, data, system_prompt):
