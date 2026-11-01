@@ -50,6 +50,7 @@ STATIC_FILES = {
     b"/prompt.html": ("prompt.html", "text/html; charset=utf-8"),
     b"/css/prompt.css": ("css/prompt.css", "text/css; charset=utf-8"),
     b"/js/prompt.js": ("js/prompt.js", "text/javascript; charset=utf-8"),
+    b"/assets/ritual.jpg": ("assets/ritual.jpg", "image/jpeg"),
 }
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",

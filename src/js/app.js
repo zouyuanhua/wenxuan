@@ -324,14 +324,24 @@
     smoke.className = 'burn-smoke';
     smoke.setAttribute('aria-hidden', 'true');
     paper.append(text, flame, smoke);
+    const kicker = document.createElement('p');
+    kicker.className = 'burn-kicker';
+    kicker.textContent = window.AskData.COPY.burnKicker;
+    kicker.setAttribute('aria-hidden', 'true');
     const skip = document.createElement('p');
     skip.className = 'burn-skip';
     skip.textContent = window.AskData.COPY.burnSkip;
-    overlay.append(paper, skip);
+    // 焚化之后的静心语:纸已成灰,场景仍在,让人再静三秒。
+    const hush = document.createElement('p');
+    hush.className = 'burn-hush';
+    hush.textContent = window.AskData.COPY.burnHush;
+    hush.setAttribute('aria-hidden', 'true');
+    overlay.append(kicker, paper, skip, hush);
     document.body.appendChild(overlay);
     sfx('bell');
     buzz([40, 30, 60]);
     let finished = false;
+    let hushed = false;
     const finish = () => {
       if (finished) return;
       finished = true;
@@ -344,13 +354,23 @@
       document.getElementById('casting-card').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
       control.focus({ preventScroll: true });
     };
+    // 纸燃尽后不立刻退场:留在焚香场景里静心,三秒后再入摇卦。
+    const hushScene = () => {
+      if (hushed || finished) return;
+      hushed = true;
+      overlay.classList.add('is-hush');
+      skip.textContent = window.AskData.COPY.burnHushSkip;
+    };
     overlay.addEventListener('click', finish);
     if (reducedMotion.matches) {
       window.setTimeout(finish, 260);
       return;
     }
-    window.setTimeout(() => sfx('flame'), 340);
-    window.setTimeout(finish, 1250);
+    window.setTimeout(() => sfx('flame'), 1150);
+    // 疏文先静置可读(约 0.85 秒),再受热卷曲淡出;点击遮罩仍可随时跳过。
+    window.setTimeout(hushScene, 2500);
+    // 焚化 2.5 秒 + 静心停顿 3 秒,然后进入摇卦。
+    window.setTimeout(finish, 5500);
   }
 
   function yaoSVG(yang, moving) {
