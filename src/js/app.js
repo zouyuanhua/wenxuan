@@ -61,6 +61,9 @@
   let interpreting = false;
   let interpretation = null;
   let interpretationFailed = false;
+  // 守门整理后的问题只用于发给服务端,界面始终显示用户原文。
+  let requestQuestion = null;
+  let reviewing = false;
   let selectedCategory = null;
   let soundOn = window.localStorage.getItem('wenxuan.sound') !== 'off';
   let audioContext = null;
@@ -146,15 +149,23 @@
   if (window.AskData) atmosphere.textContent = window.AskData.atmosphereText(new Date());
 
   function refreshValidity() {
+    if (lockedQuestion !== null) return;
+    const data = window.AskData;
     const length = codePointLength(questionInput.value.trim());
     askCount.textContent = length + ' / ' + maxQuestionLength;
-    askCount.classList.toggle('is-over', length >= maxQuestionLength);
-    const valid = selectedCategory !== null && length >= minQuestionLength && length <= maxQuestionLength;
-    lockQuestion.disabled = !valid || lockedQuestion !== null;
+    askCount.classList.toggle('is-over', length > maxQuestionLength);
+    const valid = !!data && selectedCategory !== null && length >= minQuestionLength && length <= maxQuestionLength;
+    lockQuestion.disabled = !valid;
+    if (!data) questionHelp.textContent = '问事台数据未加载，请刷新页面重试。';
+    else if (selectedCategory === null) questionHelp.textContent = data.COPY.noCategory;
+    else if (!length) questionHelp.textContent = data.COPY.defaultHelp;
+    else if (length < minQuestionLength) questionHelp.textContent = data.COPY.tooShort + '（还需 ' + (minQuestionLength - length) + ' 字）';
+    else if (length > maxQuestionLength) questionHelp.textContent = data.COPY.tooLong;
+    else questionHelp.textContent = data.COPY.validHelp;
+    lockQuestion.title = valid ? '诚心已备，可以起卦。' : questionHelp.textContent;
     if (valid) {
       questionSection.classList.remove('has-error');
       questionInput.removeAttribute('aria-invalid');
-      questionHelp.textContent = window.AskData ? window.AskData.COPY.validHelp : '分类已定，疏文已备。';
     }
   }
 
@@ -214,8 +225,11 @@
     });
     subsBox.appendChild(freeChip);
     subsBox.hidden = false;
-    if (switched) questionHelp.textContent = window.AskData.COPY.switchCategory;
     refreshValidity();
+    if (switched) {
+      questionHelp.textContent = window.AskData.COPY.switchCategory;
+      lockQuestion.title = questionHelp.textContent;
+    }
   }
 
   if (window.AskData) {
@@ -235,12 +249,9 @@
       button.addEventListener('click', () => selectCategory(category, button));
       categoriesBox.appendChild(button);
     });
-  } else {
-    lockQuestion.disabled = true;
-    questionHelp.textContent = '问事台数据未加载，请刷新页面重试。';
   }
 
-  questionInput.addEventListener('input', () => {
+  function handleQuestionInput() {
     if (lockedQuestion !== null) {
       questionInput.value = lockedQuestion;
       return;
@@ -248,20 +259,39 @@
     if (questionSection.classList.contains('has-error')) {
       questionSection.classList.remove('has-error');
       questionInput.removeAttribute('aria-invalid');
-      questionHelp.textContent = window.AskData ? window.AskData.COPY.defaultHelp : '';
     }
     refreshValidity();
-  });
+  }
 
-  questionForm.addEventListener('submit', event => {
+  questionInput.addEventListener('input', handleQuestionInput);
+  questionInput.addEventListener('change', handleQuestionInput);
+  window.addEventListener('pageshow', handleQuestionInput);
+  refreshValidity();
+
+  questionForm.addEventListener('submit', async event => {
     event.preventDefault();
-    if (lockedQuestion !== null) return;
+    if (lockedQuestion !== null || reviewing) return;
+    if (!window.AskData) { failAsk('问事台数据未加载，请刷新页面重试。'); return; }
     const question = questionInput.value.trim();
     const length = codePointLength(question);
     if (selectedCategory === null) { failAsk(window.AskData.COPY.noCategory); return; }
     if (!question) { failAsk(window.AskData.COPY.emptyQuestion); return; }
     if (length < minQuestionLength) { failAsk(window.AskData.COPY.tooShort); return; }
     if (length > maxQuestionLength) { failAsk(window.AskData.COPY.tooLong); return; }
+    // 先过守门:按钮显示审阅中,判定后再锁定或退回。
+    reviewing = true;
+    lockQuestion.disabled = true;
+    lockQuestionLabel.textContent = '审阅中…';
+    const review = await reviewQuestion(question);
+    reviewing = false;
+    lockQuestionLabel.textContent = '诚心已备 · 起卦';
+    if (review.verdict === 'block') {
+      lockQuestion.disabled = false;
+      refreshValidity();
+      failAsk(review.reason || GUARD_BLOCK_MESSAGE);
+      return;
+    }
+    requestQuestion = review.cleanQuestion || question;
     lockedQuestion = question;
     questionInput.value = lockedQuestion;
     questionInput.readOnly = true;
@@ -269,6 +299,7 @@
     lockQuestionLabel.textContent = '疏文已焚 · 静候起卦';
     questionState.textContent = '已诚心';
     questionHelp.textContent = window.AskData.COPY.lockedHelp;
+    lockQuestion.title = window.AskData.COPY.lockedHelp;
     questionInput.removeAttribute('aria-invalid');
     questionSection.classList.remove('has-error');
     questionSection.classList.add('is-locked');
@@ -293,14 +324,24 @@
     smoke.className = 'burn-smoke';
     smoke.setAttribute('aria-hidden', 'true');
     paper.append(text, flame, smoke);
+    const kicker = document.createElement('p');
+    kicker.className = 'burn-kicker';
+    kicker.textContent = window.AskData.COPY.burnKicker;
+    kicker.setAttribute('aria-hidden', 'true');
     const skip = document.createElement('p');
     skip.className = 'burn-skip';
     skip.textContent = window.AskData.COPY.burnSkip;
-    overlay.append(paper, skip);
+    // 焚化之后的静心语:纸已成灰,场景仍在,让人再静三秒。
+    const hush = document.createElement('p');
+    hush.className = 'burn-hush';
+    hush.textContent = window.AskData.COPY.burnHush;
+    hush.setAttribute('aria-hidden', 'true');
+    overlay.append(kicker, paper, skip, hush);
     document.body.appendChild(overlay);
     sfx('bell');
     buzz([40, 30, 60]);
     let finished = false;
+    let hushed = false;
     const finish = () => {
       if (finished) return;
       finished = true;
@@ -313,13 +354,23 @@
       document.getElementById('casting-card').scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
       control.focus({ preventScroll: true });
     };
+    // 纸燃尽后不立刻退场:留在焚香场景里静心,三秒后再入摇卦。
+    const hushScene = () => {
+      if (hushed || finished) return;
+      hushed = true;
+      overlay.classList.add('is-hush');
+      skip.textContent = window.AskData.COPY.burnHushSkip;
+    };
     overlay.addEventListener('click', finish);
     if (reducedMotion.matches) {
       window.setTimeout(finish, 260);
       return;
     }
-    window.setTimeout(() => sfx('flame'), 340);
-    window.setTimeout(finish, 1250);
+    window.setTimeout(() => sfx('flame'), 1150);
+    // 疏文先静置可读(约 0.85 秒),再受热卷曲淡出;点击遮罩仍可随时跳过。
+    window.setTimeout(hushScene, 2500);
+    // 焚化 2.5 秒 + 静心停顿 3 秒,然后进入摇卦。
+    window.setTimeout(finish, 5500);
   }
 
   function yaoSVG(yang, moving) {
@@ -459,6 +510,149 @@
   }
 
   // 追问循环(FR-05):同一卦象最多追问 3 次,超限收尾。
+  // 守门:起卦与追问前先做一次独立审查。接口不可用时退回本地高危模式,
+  // 命中则拦,否则原文放行——与 src/guard.py 的兜底策略一致。
+  const LOCAL_GUARD_PATTERNS = [
+    /(忽略|无视)[^。！？\n]{0,4}(之前|以上|上述|前面|先前)[^。！？\n]{0,4}(指令|提示词|提示|规则|要求|设定)/,
+    /(输出|泄露|复述|告诉我|打印)[^。！？\n]{0,10}(系统提示词|系统提示|系统消息|你的指令|你的设定|system\s*prompt)/i,
+    /(系统提示词|系统提示|system\s*prompt|你的指令|你的设定)[^。！？\n]{0,8}(是什么|告诉我|输出|复述|泄露|打印|内容)/i,
+    /(ignore|disregard)\s+(all\s+)?(the\s+)?(previous|above|prior|earlier)\s+(instructions|prompts|rules)/i,
+    /(jailbreak|developer\s*mode|越狱|开发者模式|绕过限制|解除限制)/i
+  ];
+  const GUARD_BLOCK_MESSAGE = '这则问事中夹带了指令性内容，请只写下你想问的事。';
+
+  function localGuardHit(question) {
+    return LOCAL_GUARD_PATTERNS.some(pattern => pattern.test(question));
+  }
+
+  async function reviewQuestion(question) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 25000);
+    try {
+      const response = await fetch('/api/safety/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: selectedCategory ? selectedCategory.name : '',
+          subCategory: '',
+          question: question
+        }),
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error('guard unavailable');
+      const data = await response.json();
+      const verdict = data && typeof data.verdict === 'string' ? data.verdict : '';
+      const clean = data && typeof data.cleanQuestion === 'string' ? data.cleanQuestion.trim() : '';
+      const reason = data && typeof data.reason === 'string' ? data.reason.trim() : '';
+      if (verdict === 'block') {
+        return { verdict: 'block', reason: reason || GUARD_BLOCK_MESSAGE };
+      }
+      if (verdict === 'pass') return { verdict: 'pass', cleanQuestion: question };
+      if (verdict === 'rewrite' && clean) return { verdict: 'rewrite', cleanQuestion: clean };
+      throw new Error('guard invalid');
+    } catch (error) {
+      if (localGuardHit(question)) return { verdict: 'block', reason: GUARD_BLOCK_MESSAGE };
+      return { verdict: 'pass', cleanQuestion: question };
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  // 首次解读先「卦象解析」再三章;识别不到固定结构时退回纯文本。
+  const READING_ANALYSIS_TITLE = '卦象解析';
+  const READING_SECTIONS = ['一、卦象照见', '二、宽厚以待', '三、可行之路'];
+
+  function renderReading(container, text) {
+    const sections = [];
+    const preface = [];
+    let analysis = null;
+    let current = null;
+    text.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim().replace(/^[#*\s]+/, '').replace(/[*\s]+$/, '');
+      if (trimmed === READING_ANALYSIS_TITLE ||
+          (trimmed.startsWith(READING_ANALYSIS_TITLE) &&
+           trimmed.length <= READING_ANALYSIS_TITLE.length + 12)) {
+        const rest = trimmed.slice(READING_ANALYSIS_TITLE.length).replace(/^[：:，,、\s]+/, '').trim();
+        analysis = { paragraphs: rest ? [rest] : [] };
+        current = analysis;
+        return;
+      }
+      const title = READING_SECTIONS.find(item =>
+        trimmed === item || (trimmed.startsWith(item) && trimmed.length <= item.length + 12));
+      if (title) {
+        const rest = trimmed.slice(title.length).replace(/^[：:，,、\s]+/, '').trim();
+        current = { title: title, paragraphs: rest ? [rest] : [] };
+        sections.push(current);
+        return;
+      }
+      if (!trimmed) return;
+      if (current) current.paragraphs.push(trimmed);
+      else preface.push(trimmed);
+    });
+    if (sections.length < 2) {
+      container.textContent = text;
+      return;
+    }
+    container.replaceChildren();
+    if (preface.length) {
+      const intro = document.createElement('p');
+      intro.className = 'reading-preface';
+      intro.textContent = preface.join('\n');
+      container.appendChild(intro);
+    }
+    if (analysis) {
+      const analysisBlock = document.createElement('section');
+      analysisBlock.className = 'reading-analysis';
+      const analysisHeading = document.createElement('h3');
+      analysisHeading.className = 'reading-analysis-title';
+      analysisHeading.textContent = READING_ANALYSIS_TITLE;
+      analysisBlock.appendChild(analysisHeading);
+      analysis.paragraphs.forEach(para => {
+        const p = document.createElement('p');
+        p.className = 'reading-paragraph';
+        p.textContent = para;
+        analysisBlock.appendChild(p);
+      });
+      container.appendChild(analysisBlock);
+    }
+    sections.forEach(section => {
+      const block = document.createElement('section');
+      block.className = 'reading-section';
+      const heading = document.createElement('h3');
+      heading.className = 'reading-section-title';
+      heading.textContent = section.title;
+      block.appendChild(heading);
+      section.paragraphs.forEach(para => {
+        const p = document.createElement('p');
+        p.className = 'reading-paragraph';
+        p.textContent = para;
+        block.appendChild(p);
+      });
+      container.appendChild(block);
+    });
+  }
+
+  // 追问块追加在首次解读之后,保留完整对话记录,不覆盖前文。
+  function renderFollowup(container, index, question, answer) {
+    const block = document.createElement('section');
+    block.className = 'reading-followup';
+    const heading = document.createElement('h3');
+    heading.className = 'reading-followup-title';
+    heading.textContent = '追问 ' + index;
+    block.appendChild(heading);
+    const ask = document.createElement('p');
+    ask.className = 'reading-followup-question';
+    ask.textContent = '问：' + question;
+    block.appendChild(ask);
+    answer.split(/\r?\n/).map(line => line.trim()).filter(Boolean).forEach(text => {
+      const p = document.createElement('p');
+      p.className = 'reading-paragraph';
+      p.textContent = text;
+      block.appendChild(p);
+    });
+    container.appendChild(block);
+  }
+
   function updateFollowupPanel() {
     if (interpretation === null) {
       followupPanel.hidden = true;
@@ -488,8 +682,19 @@
     if (lockedQuestion === null || lines.length !== 6 || interpretation === null) return;
     followingUp = true;
     followupButton.disabled = true;
-    followupButton.textContent = '追问中…';
+    followupButton.textContent = '审阅中…';
     followupError.hidden = true;
+    const review = await reviewQuestion(question);
+    if (review.verdict === 'block') {
+      followingUp = false;
+      followupButton.textContent = '追问';
+      followupError.textContent = review.reason || GUARD_BLOCK_MESSAGE;
+      followupError.hidden = false;
+      updateFollowupPanel();
+      return;
+    }
+    const askFollowup = review.cleanQuestion || question;
+    followupButton.textContent = '追问中…';
     aiReading.dataset.state = 'loading';
     readingState.textContent = '追问解读中';
     readingStatus.hidden = false;
@@ -507,7 +712,12 @@
         body: JSON.stringify({
           question: lockedQuestion,
           lines: lines.map(line => ({ coins: line.coins.slice() })),
-          followup: { index: followupsUsed + 1, question, history: followupHistory.slice() }
+          followup: {
+            index: followupsUsed + 1,
+            question: askFollowup,
+            history: followupHistory.slice(),
+            initial: interpretation ? { question: lockedQuestion, answer: interpretation } : null
+          }
         }),
         signal: controller.signal
       });
@@ -520,9 +730,9 @@
       const answer = typeof data.interpretation === 'string' ? data.interpretation.trim() : '';
       if (!answer) throw new Error('暂未收到完整解读，请稍后重试。');
       followupsUsed += 1;
-      followupHistory.push({ question, answer });
+      followupHistory.push({ question: askFollowup, answer });
       renderClassics(data.classics);
-      readingContent.textContent = '【追问' + followupsUsed + '】' + question + '\n\n' + answer;
+      renderFollowup(readingContent, followupsUsed, question, answer);
       readingState.textContent = '解读完成';
       aiReading.dataset.state = 'success';
       readingStatusText.textContent = '追问解读已完成。';
@@ -581,6 +791,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: lockedQuestion,
+          cleanQuestion: requestQuestion || undefined,
           lines: lines.map(line => ({ coins: line.coins.slice() }))
         }),
         signal: controller.signal
@@ -601,7 +812,7 @@
       }
       interpretation = data.interpretation.trim();
       // Model output is text, never executable HTML or untrusted markup.
-      readingContent.textContent = interpretation;
+      renderReading(readingContent, interpretation);
       readingContent.hidden = false;
       readingState.textContent = '解读完成';
       aiReading.dataset.state = 'success';
@@ -658,6 +869,10 @@
       if (lines.length === 6) {
         const count = lines.filter(item => item.moving).length;
         status.textContent = '六爻已成 · ' + (count ? count + ' 个动爻，以朱砂色标记' : '六爻皆静，阴阳不变');
+        // 六爻纳甲排盘：确定性计算，摇满即展示（不依赖解卦请求与结果）。
+        if (window.PaiPan && typeof window.PaiPan.renderFromCoins === 'function') {
+          window.PaiPan.renderFromCoins(lines.map(item => item.coins.slice()));
+        }
       } else {
         status.textContent = positions[index] + '已定 · ' + combinations[line.backCount] + ' · ' + line.name + (line.moving ? '动爻' : '静爻');
       }

@@ -8,7 +8,12 @@
   <title>问玄 · 一念起，六爻生</title>
   <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOSIgZmlsbD0iIzk3NDgzZCIvPjxwYXRoIGQ9Ik05IDExaDIyTTkgMjBoOW00IDBoOU05IDI5aDIyIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmY3ZTkiIHN0cm9rZS13aWR0aD0iMyIvPjwvc3ZnPgo=" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/paipan.css">
+  <link rel="stylesheet" href="css/reading.css">
   <script src="js/hexagram.js" defer></script>
+  <script src="js/vendor/lunar.min.js" defer></script>
+  <script src="js/liuyao.js" defer></script>
+  <script src="js/paipan.js" defer></script>
   <script src="js/ask-data.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
@@ -55,7 +60,6 @@
       <p class="ask-atmosphere" id="ask-atmosphere">宜静心 · 宜问事</p>
       <h1 class="ask-title">何事所困?</h1>
       <form class="question-form" id="question-form">
-        <p class="ask-guide" id="ask-guide">抽一支签，说说你的困惑</p>
         <div class="ask-categories" id="ask-categories" role="listbox" aria-label="问事分类"></div>
         <p class="ask-tagline" id="ask-tagline" role="status" aria-live="polite" hidden></p>
         <div class="ask-subs" id="ask-subs" hidden></div>
@@ -64,8 +68,8 @@
           <span class="ask-count" id="ask-count" aria-hidden="true">0 / 200</span>
         </div>
         <div class="question-footer">
-          <p class="question-help" id="question-help" role="status" aria-live="polite">抽签或自由来问，心诚则灵。</p>
-          <button class="lock-question ask-confirm" id="lock-question" type="submit" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5c2.6 1.7 4.6 4.1 4.6 6.9a4.6 4.6 0 1 1-9.2 0c0-2.8 2-5.2 4.6-6.9ZM10 15.6v2.4"/></svg><span id="lock-question-label">诚心已备 · 起卦</span></button>
+          <p class="question-help" id="question-help" role="status" aria-live="polite">先选上方分类，自由来问可选「其他」；心事需有 5–200 字。</p>
+          <button class="lock-question ask-confirm" id="lock-question" type="submit" aria-describedby="question-help" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5c2.6 1.7 4.6 4.1 4.6 6.9a4.6 4.6 0 1 1-9.2 0c0-2.8 2-5.2 4.6-6.9ZM10 15.6v2.4"/></svg><span id="lock-question-label">诚心已备 · 起卦</span></button>
         </div>
         <span class="question-state" id="question-state" hidden></span>
       </form>
@@ -129,7 +133,7 @@
   <dialog id="method-dialog" aria-labelledby="method-title">
     <div class="dialog-heading"><span class="eyebrow">三钱起卦</span><button class="close-button" id="close-method" type="button" aria-label="关闭起卦方法"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div>
     <h2 id="method-title">静心一念，六爻成卦。</h2>
-    <ol class="method-steps"><li><span>01</span><div><h3>抽签写下心事</h3><p>在问事台抽一支分类签，或自由写下心事，点击「诚心已备 · 起卦」。疏文焚化后不可修改，铜钱即可开始摇卦。</p></div></li><li><span>02</span><div><h3>三枚铜钱，轻摇六次</h3><p>轻点任意一枚铜钱，三钱同时翻转，落成一爻。同样的三枚铜钱重复摇六次，记录从最下方初爻依次向上，直到上爻。</p></div></li><li><span>03</span><div><h3>观本卦，知其变</h3><p>阳爻为一条实线，阴爻为两段断线。动爻以朱砂红标记，阴阳互换后形成变卦。六爻成卦后铜钱锁定，点击「解卦」查看本卦、变卦与动爻说明。</p></div></li></ol>
+    <ol class="method-steps"><li><span>01</span><div><h3>抽签写下心事</h3><p>先在问事台选一支分类签，再用模板或自由写下 5–200 字的心事；自由来问可选「其他」。点击「诚心已备 · 起卦」，疏文焚化后不可修改，铜钱即可开始摇卦。</p></div></li><li><span>02</span><div><h3>三枚铜钱，轻摇六次</h3><p>轻点任意一枚铜钱，三钱同时翻转，落成一爻。同样的三枚铜钱重复摇六次，记录从最下方初爻依次向上，直到上爻。</p></div></li><li><span>03</span><div><h3>观本卦，知其变</h3><p>阳爻为一条实线，阴爻为两段断线。动爻以朱砂红标记，阴阳互换后形成变卦。六爻成卦后铜钱锁定，点击「解卦」查看本卦、变卦与动爻说明。</p></div></li></ol>
     <div class="method-note"><svg aria-hidden="true" viewBox="0 0 64 64"><use href="#coin-front"/></svg><p><strong>字面</strong>有「乾隆通寶」四字<br><strong>背面</strong>为纹饰图案</p></div>
     <button class="dialog-confirm" id="confirm-method" type="button">明白了，静心起卦</button>
   </dialog>

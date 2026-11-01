@@ -3,6 +3,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 import json
+import logging
 import math
 import os
 from pathlib import Path
@@ -18,25 +19,38 @@ from starlette.responses import JSONResponse, Response
 from hexagram import change_lines, classify_coins, describe_hexagram
 from followup import FollowupError, validate_followup
 from gua_classics import classics_grounding, classics_summary
+from guard import (DEFAULT_GUARD_PROMPT, GuardError, fallback_guard,
+                   normalize_guard_result, parse_guard_result, validate_guard_payload)
 from prompt_config import MAX_PROMPT_LENGTH, PromptConfigError, PromptStore, validate_prompt
 
 APP_DIR = Path(__file__).resolve().parent
+logger = logging.getLogger(__name__)
 MODEL = "deepseek-flash"
 UPSTREAM_URL = "https://api.deepseek.com/chat/completions"
 MAX_REQUEST_BYTES = 32 * 1024
 MAX_SETTINGS_BYTES = 128 * 1024
 MAX_RESPONSE_BYTES = 256 * 1024
+GUARD_MAX_TOKENS = 600
+GUARD_TIMEOUT_SECONDS = 20
+FOLLOWUP_MAX_TOKENS = 1600
 POSITIONS = ("初爻", "二爻", "三爻", "四爻", "五爻", "上爻")
 COMBINATIONS = ("三个字", "两字一背", "两背一字", "三个背")
 STATIC_FILES = {
     b"/": ("index.html", "text/html; charset=utf-8"),
     b"/index.html": ("index.html", "text/html; charset=utf-8"),
     b"/css/style.css": ("css/style.css", "text/css; charset=utf-8"),
+    b"/css/paipan.css": ("css/paipan.css", "text/css; charset=utf-8"),
+    b"/css/reading.css": ("css/reading.css", "text/css; charset=utf-8"),
     b"/js/app.js": ("js/app.js", "text/javascript; charset=utf-8"),
     b"/js/hexagram.js": ("js/hexagram.js", "text/javascript; charset=utf-8"),
+    b"/js/ask-data.js": ("js/ask-data.js", "text/javascript; charset=utf-8"),
+    b"/js/vendor/lunar.min.js": ("js/vendor/lunar.min.js", "text/javascript; charset=utf-8"),
+    b"/js/liuyao.js": ("js/liuyao.js", "text/javascript; charset=utf-8"),
+    b"/js/paipan.js": ("js/paipan.js", "text/javascript; charset=utf-8"),
     b"/prompt.html": ("prompt.html", "text/html; charset=utf-8"),
     b"/css/prompt.css": ("css/prompt.css", "text/css; charset=utf-8"),
     b"/js/prompt.js": ("js/prompt.js", "text/javascript; charset=utf-8"),
+    b"/assets/ritual.jpg": ("assets/ritual.jpg", "image/jpeg"),
 }
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
@@ -144,8 +158,19 @@ def canonicalize(body):
         followup = validate_followup(body.get("followup"))
     except FollowupError as error:
         raise APIError(400, "INVALID_FOLLOWUP", str(error)) from None
+    # 守门整理后的问题:仅用于组装给模型的问事内容,界面仍显示原文。
+    # 非法或缺省时忽略,不阻断解卦。
+    clean_question = body.get("cleanQuestion")
+    if type(clean_question) is str:
+        clean_question = clean_question.strip()
+        if (not clean_question
+                or len(clean_question.encode("utf-16-le", "surrogatepass")) // 2 > 2000):
+            clean_question = None
+    else:
+        clean_question = None
     return {
         "question": question,
+        "cleanQuestion": clean_question,
         "primary": describe_hexagram(lines),
         "changed": describe_hexagram(change_lines(lines)),
         "movingLines": [index + 1 for index, line in enumerate(lines) if line["moving"]],
@@ -161,27 +186,53 @@ async def interpret(client, api_key, data, system_prompt):
     # FR-03 知识检索层：注入权威卦辞爻辞（64卦数据库），模型只允许依据原文解读（防幻觉）。
     grounding = classics_grounding(data)
     system_content = f"{system_prompt}\n\n{grounding}" if grounding else system_prompt
+    # 守门整理后的问题只用于模型输入;没有整理版时沿用原文。
+    clean_question = data.pop("cleanQuestion", None)
+    if clean_question:
+        data["question"] = clean_question
+    # 把所问之事单独置顶,避免模型在长 JSON 里忽略问题、转入泛泛的人生解读。
+    asked = data.get("question") or ""
+    user_content = ((f"【所问之事】{asked}\n\n" if asked else "")
+                    + "以下是本次卦象数据（question 字段即上句所问，勿改变其意图）：\n"
+                    + json.dumps(data, ensure_ascii=False))
     messages = [{"role": "system", "content": system_content},
-                {"role": "user", "content": json.dumps(data, ensure_ascii=False)}]
+                {"role": "user", "content": user_content}]
     followup = data.get("followup")
+    max_tokens = 2200
     if followup:
-        # FR-05 追问循环：同一卦象的多轮对话，回答仍受【典籍依据】约束并围绕原问题。
-        system_content += (f"\n\n以下是针对同一卦象的第{followup['index']}次追问；回答仍须仅依据"
-                           "【典籍依据】与既有卦象，围绕用户所问之事；若追问超出卦象所能回答的"
-                           "范围，礼貌说明并引导其回到本卦主题，不展开无关内容。")
+        # FR-05:同一卦象、同一问题的持续研讨;首次解读与历次问答一起入上下文。
+        system_content += ("\n\n你正在与来问者围绕同一卦象、同一问题持续研讨，这是第"
+                           f"{followup['index']}次追问（最多 3 次）。追问的回答要简短、清晰、"
+                           "洞察人心、直指本质：先用一两句话直接给出判断，说清这件事的本质，"
+                           "不铺垫、不复述问题、不写「这一问很关键」之类的过渡；"
+                           "再用一两句点出卦象或前文哪里支持这个判断，不重做卦象解析，"
+                           "不罗列纳甲、六亲、六神；最后落到一句：一个眼下可做的动作，"
+                           "或一句让他自己带回心里的话，点到为止。全文 150 至 350 字，"
+                           "用自然段落，不用标题，不用列表，不用 Markdown。"
+                           "沿用前文已经作出的判断；若前文说错了，先用一句话明确修正，"
+                           "再给新判断，不辩解。不要重新起卦，不要改写卦象与排盘事实，"
+                           "不要重复前文已经说过的内容。若追问超出卦象所能回答的范围，"
+                           "用一句话说明，并引导他回到本卦的问题上。"
+                           "追问同样只围绕所问之事与原问题作答，不得转移到其他话题，"
+                           "也不得泛化为人生建议。")
         messages[0] = {"role": "system", "content": system_content}
+        initial = followup.get("initial")
+        if initial:
+            messages.append({"role": "assistant", "content": initial["answer"]})
         for item in followup["history"]:
-            messages.append({"role": "assistant", "content": item["answer"]})
             messages.append({"role": "user", "content": f"【追问{item['index']}】{item['question']}"})
-        messages.append({"role": "user", "content": f"【追问{followup['index']}】{followup['question']}"})
+            messages.append({"role": "assistant", "content": item["answer"]})
+        messages.append({"role": "user", "content": f"【本次追问 · 第{followup['index']}次】{followup['question']}"})
+        max_tokens = FOLLOWUP_MAX_TOKENS
     payload = {
         "model": MODEL,
         "messages": messages,
-        "thinking": {"type": "disabled"}, "stream": False, "max_tokens": 2200,
+        "thinking": {"type": "disabled"}, "stream": False, "max_tokens": max_tokens,
     }
     async with client.stream("POST", UPSTREAM_URL, json=payload,
                              headers={"Authorization": f"Bearer {api_key}"}) as response:
         if response.status_code != 200:
+            logger.warning("DeepSeek request rejected: status=%d", response.status_code)
             message = ("解卦服务繁忙，请稍后重试。" if response.status_code == 429
                        else "解卦服务暂不可用，请稍后重试。")
             raise APIError(502, "UPSTREAM_UNAVAILABLE", message)
@@ -217,6 +268,38 @@ async def interpret(client, api_key, data, system_prompt):
             "classics": classics_summary(data)}
 
 
+async def guard_question(client, api_key, payload, prompt):
+    """独立守门调用;未配置、超时或返回异常时一律退回本地规则。"""
+    question = payload["question"]
+    if not api_key.strip():
+        return fallback_guard(question)
+    messages = [{"role": "system", "content": prompt},
+                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]
+    request_payload = {
+        "model": MODEL, "messages": messages,
+        "thinking": {"type": "disabled"}, "stream": False, "max_tokens": GUARD_MAX_TOKENS,
+    }
+    try:
+        async with client.stream("POST", UPSTREAM_URL, json=request_payload,
+                                 headers={"Authorization": f"Bearer {api_key}"}) as response:
+            if response.status_code != 200:
+                return fallback_guard(question)
+            raw = bytearray()
+            async for chunk in response.aiter_bytes():
+                if len(raw) + len(chunk) > MAX_RESPONSE_BYTES:
+                    return fallback_guard(question)
+                raw.extend(chunk)
+        body = json.loads(raw.decode("utf-8-sig"), parse_constant=_reject_constant)
+    except (httpx.HTTPError, ValueError, UnicodeError, RecursionError):
+        return fallback_guard(question)
+    choices = body.get("choices") if isinstance(body, dict) else None
+    choice = choices[0] if isinstance(choices, list) and choices else None
+    message = choice.get("message") if isinstance(choice, dict) else None
+    content = message.get("content") if isinstance(message, dict) else None
+    normalized = normalize_guard_result(parse_guard_result(content), question)
+    return normalized if normalized is not None else fallback_guard(question)
+
+
 async def interpret_until_disconnect(request, client, api_key, data, timeout_seconds, system_prompt):
     async def disconnected():
         while True:
@@ -227,12 +310,14 @@ async def interpret_until_disconnect(request, client, api_key, data, timeout_sec
     work = asyncio.create_task(interpret(client, api_key, data, system_prompt))
     watch = asyncio.create_task(disconnected())
     try:
-        # Unlike per-read timeouts, this deadline includes the entire response body.
-        async with asyncio.timeout(timeout_seconds):
-            done, _ = await asyncio.wait((work, watch), return_when=asyncio.FIRST_COMPLETED)
-            if watch in done:
-                raise APIError(499, "CLIENT_DISCONNECTED", "请求已中断，请重试。")
-            return await work
+        # wait_for supports Python 3.10 and covers the entire response body.
+        done, _ = await asyncio.wait_for(
+            asyncio.wait((work, watch), return_when=asyncio.FIRST_COMPLETED),
+            timeout=timeout_seconds,
+        )
+        if watch in done:
+            raise APIError(499, "CLIENT_DISCONNECTED", "请求已中断，请重试。")
+        return await work
     finally:
         for task in (work, watch):
             if not task.done():
@@ -300,6 +385,38 @@ def create_app(api_key=None, transport=None, timeout_seconds=60, prompt_path=Non
                 async with prompt_lock:
                     await asyncio.to_thread(prompt_store.write, prompt)
                 return JSONResponse({"systemPrompt": prompt, "maxLength": MAX_PROMPT_LENGTH})
+            if raw_path == b"/api/settings/guard-prompt":
+                if request.method in ("GET", "HEAD"):
+                    guard = await asyncio.to_thread(prompt_store.read_guard, DEFAULT_GUARD_PROMPT)
+                    response = JSONResponse({"guardPrompt": guard, "maxLength": MAX_PROMPT_LENGTH})
+                    return Response(headers=dict(response.headers)) if request.method == "HEAD" else response
+                if request.method != "PUT":
+                    raise APIError(405, "METHOD_NOT_ALLOWED", "守门提示词支持读取和保存。", {"Allow": "GET, HEAD, PUT"})
+                body = await read_request_json(request, MAX_SETTINGS_BYTES)
+                try:
+                    guard = validate_prompt(body.get("guardPrompt") if isinstance(body, dict) else None)
+                except ValueError as error:
+                    raise APIError(400, "INVALID_PROMPT", str(error)) from None
+                async with prompt_lock:
+                    await asyncio.to_thread(prompt_store.write_guard, guard)
+                return JSONResponse({"guardPrompt": guard, "maxLength": MAX_PROMPT_LENGTH})
+            if raw_path == b"/api/safety/check":
+                if request.method != "POST":
+                    raise APIError(405, "METHOD_NOT_ALLOWED", "请使用提交方式请求审查。", {"Allow": "POST"})
+                body = await read_request_json(request, MAX_REQUEST_BYTES)
+                try:
+                    payload = validate_guard_payload(body)
+                except GuardError as error:
+                    raise APIError(400, "INVALID_QUESTION", str(error)) from None
+                guard_prompt = await asyncio.to_thread(prompt_store.read_guard, DEFAULT_GUARD_PROMPT)
+                try:
+                    result = await asyncio.wait_for(
+                        guard_question(application.state.client, key, payload, guard_prompt),
+                        timeout=min(GUARD_TIMEOUT_SECONDS, timeout_seconds),
+                    )
+                except (TimeoutError, asyncio.TimeoutError):
+                    result = fallback_guard(payload["question"])
+                return JSONResponse(result)
             if raw_path in STATIC_FILES:
                 if request.method not in ("GET", "HEAD"):
                     raise APIError(405, "METHOD_NOT_ALLOWED", "此页面仅支持读取。", {"Allow": "GET, HEAD"})
@@ -325,12 +442,13 @@ def create_app(api_key=None, transport=None, timeout_seconds=60, prompt_path=Non
                 raise APIError(503, "SERVICE_NOT_CONFIGURED", "尚未配置解卦服务，请先完成服务端配置。")
             try:
                 result = await interpret_until_disconnect(request, application.state.client, key, data, timeout_seconds, prompt)
-            except (TimeoutError, httpx.TimeoutException):
+            except (TimeoutError, asyncio.TimeoutError, httpx.TimeoutException):
                 raise APIError(504, "UPSTREAM_TIMEOUT", "解卦等待超时，请稍后重试。") from None
             except APIError:
                 raise
-            except Exception:
-                # Provider diagnostics may contain credentials; never return or log them.
+            except Exception as error:
+                # Only log the exception class; provider details may contain credentials.
+                logger.warning("DeepSeek request failed: type=%s", type(error).__name__)
                 raise APIError(502, "UPSTREAM_FAILED", "解卦服务暂不可用，请稍后重试。") from None
             return JSONResponse(result)
         except APIError as error:

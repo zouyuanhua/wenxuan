@@ -8,15 +8,18 @@
   var COPY = {
     atmosphereFallback: "今日 · 宜静心问事",
     freeAsk: "自由来问",
-    switchCategory: "再想想，换一事来问",
+    switchCategory: "再想想，换一事来问。请重新写下 5–200 字的心事。",
     emptyQuestion: "心事未落笔，如何起卦?",
     tooShort: "再多写几个字，卦才知道你在问什么",
     tooLong: "疏文太长了，心事宜简",
     lockedHelp: "诚心已备，疏文已焚，静候起卦。",
+    burnKicker: "焚香静心 · 敬呈所问",
+    burnHush: "静心凝神 · 敬候起卦",
+    burnHushSkip: "静心片刻 · 轻触可跳过",
     burnSkip: "轻触任意处跳过",
     validHelp: "分类已定，疏文已备。",
-    defaultHelp: "抽签或自由来问，心诚则灵。",
-    noCategory: "抽一支签，先选定何事所困。"
+    defaultHelp: "分类已选，写下 5–200 字的心事即可起卦。",
+    noCategory: "先选上方分类，自由来问可选「其他」；心事需有 5–200 字。"
   };
 
   var CATEGORIES = [

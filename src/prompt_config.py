@@ -29,7 +29,7 @@ class PromptStore:
     def __init__(self, file_path):
         self.path = Path(file_path)
 
-    def read(self):
+    def _load(self):
         try:
             with self.path.open("rb") as source:
                 raw = source.read(MAX_CONFIG_BYTES + 1)
@@ -38,12 +38,47 @@ class PromptStore:
             data = json.loads(raw.decode("utf-8-sig"))
             if not isinstance(data, dict):
                 raise ValueError("Invalid configuration")
-            return validate_prompt(data.get("system_prompt"))
+            return data
         except (OSError, ValueError, UnicodeError, RecursionError):
             raise PromptConfigError("无法读取提示词配置，请在配置页面重新保存。") from None
 
+    def read(self):
+        try:
+            return validate_prompt(self._load().get("system_prompt"))
+        except (ValueError, UnicodeError, RecursionError):
+            raise PromptConfigError("无法读取提示词配置，请在配置页面重新保存。") from None
+
+    def read_guard(self, default_prompt):
+        """守门提示词缺失或配置损坏时使用内置默认值,不阻断解卦。"""
+        try:
+            value = self._load().get("guard_prompt")
+            return validate_prompt(value) if value is not None else default_prompt
+        except (PromptConfigError, ValueError):
+            return default_prompt
+
+    def _load_for_write(self):
+        """文件不存在时可以创建;文件存在但损坏时必须拒绝覆盖。"""
+        if not self.path.exists():
+            return {}
+        return self._load()
+
     def write(self, value):
         value = validate_prompt(value)
+        # 配置损坏时沿用上游行为:拒绝写入并保留原文件,不静默覆盖。
+        guard = self._load_for_write().get("guard_prompt")
+        payload = {"system_prompt": value}
+        if type(guard) is str and guard.strip():
+            payload["guard_prompt"] = guard
+        self._write_payload(payload)
+        return value
+
+    def write_guard(self, value):
+        value = validate_prompt(value)
+        payload = {"system_prompt": self.read(), "guard_prompt": value}
+        self._write_payload(payload)
+        return value
+
+    def _write_payload(self, payload):
         temporary_path = None
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -51,7 +86,7 @@ class PromptStore:
                                              dir=self.path.parent, prefix=".prompt-",
                                              suffix=".tmp", delete=False) as target:
                 temporary_path = Path(target.name)
-                json.dump({"system_prompt": value}, target, ensure_ascii=False, indent=2)
+                json.dump(payload, target, ensure_ascii=False, indent=2)
                 target.write("\n")
                 target.flush()
                 os.fsync(target.fileno())
@@ -65,4 +100,3 @@ class PromptStore:
                     temporary_path.unlink(missing_ok=True)
                 except OSError:
                     pass
-        return value
