@@ -190,8 +190,13 @@ async def interpret(client, api_key, data, system_prompt):
     clean_question = data.pop("cleanQuestion", None)
     if clean_question:
         data["question"] = clean_question
+    # 把所问之事单独置顶,避免模型在长 JSON 里忽略问题、转入泛泛的人生解读。
+    asked = data.get("question") or ""
+    user_content = ((f"【所问之事】{asked}\n\n" if asked else "")
+                    + "以下是本次卦象数据（question 字段即上句所问，勿改变其意图）：\n"
+                    + json.dumps(data, ensure_ascii=False))
     messages = [{"role": "system", "content": system_content},
-                {"role": "user", "content": json.dumps(data, ensure_ascii=False)}]
+                {"role": "user", "content": user_content}]
     followup = data.get("followup")
     max_tokens = 2200
     if followup:
@@ -207,7 +212,9 @@ async def interpret(client, api_key, data, system_prompt):
                            "沿用前文已经作出的判断；若前文说错了，先用一句话明确修正，"
                            "再给新判断，不辩解。不要重新起卦，不要改写卦象与排盘事实，"
                            "不要重复前文已经说过的内容。若追问超出卦象所能回答的范围，"
-                           "用一句话说明，并引导他回到本卦的问题上。")
+                           "用一句话说明，并引导他回到本卦的问题上。"
+                           "追问同样只围绕所问之事与原问题作答，不得转移到其他话题，"
+                           "也不得泛化为人生建议。")
         messages[0] = {"role": "system", "content": system_content}
         initial = followup.get("initial")
         if initial:
