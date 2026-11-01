@@ -203,19 +203,31 @@
     if (old) old.remove();
   }
 
-  function renderFromCoins(coinsLines) {
+  // 纯数据接口：摇满六爻时算一次，页面展示与解卦请求共用同一份。
+  // 排盘含起卦时刻的干支、旬空、月建与六神起法，重复计算会因时间推进而漂移。
+  function buildFromCoins(coinsLines) {
     const engine = window.YaoGua;
-    if (!engine || typeof engine.classifyCoins !== 'function') return;
-    if (!Array.isArray(coinsLines) || coinsLines.length !== 6) return;
+    if (!engine || typeof engine.classifyCoins !== 'function') return null;
+    if (!Array.isArray(coinsLines) || coinsLines.length !== 6) return null;
     let lines;
     try {
       lines = coinsLines.map(coins => engine.classifyCoins(coins));
     } catch (error) {
-      return;
+      return null;
     }
-    const paipan = build(lines);
-    if (paipan) renderPanel(paipan, lines);
+    return build(lines);
   }
 
-  window.PaiPan = Object.freeze({ renderFromCoins: renderFromCoins, clear: clear });
+  function renderFromCoins(coinsLines) {
+    const engine = window.YaoGua;
+    const paipan = buildFromCoins(coinsLines);
+    if (!paipan || !engine || typeof engine.classifyCoins !== 'function') return;
+    renderPanel(paipan, coinsLines.map(coins => engine.classifyCoins(coins)));
+  }
+
+  window.PaiPan = Object.freeze({
+    renderFromCoins: renderFromCoins,
+    buildFromCoins: buildFromCoins,
+    clear: clear
+  });
 })();
