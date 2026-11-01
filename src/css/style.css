@@ -463,20 +463,45 @@ dialog h2 { font: 400 24px/1.6 var(--serif); letter-spacing: 1px; margin: 13px 0
 .sound-toggle.is-muted { color: #c2bcae; }
 .sound-toggle.is-muted .mute-line { display: block; }
 .sound-toggle.is-muted svg path:not(.mute-line) { opacity: .45; }
-.burn-overlay { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #23211ae6; backdrop-filter: blur(4px); cursor: pointer; }
-.burn-paper { position: relative; width: min(320px, 78vw); padding: 26px 24px 22px; background: #fbf6ea; border-radius: 3px 5px 4px 6px; box-shadow: 0 18px 60px #00000059; transform-origin: 50% 100%; animation: paper-crumple .35s ease-in both, paper-burn .4s .35s ease-in both, paper-ash .5s .78s ease-in both; }
-.burn-text { margin: 0; max-height: 40vh; overflow: auto; color: #4a463c; font: 13px/2 var(--serif); letter-spacing: 1px; overflow-wrap: anywhere; white-space: pre-wrap; }
-.burn-flame { position: absolute; left: 50%; bottom: -6px; width: 130px; height: 90px; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 100%, #ffd9a055 0%, #ff9c3f66 34%, #e2582277 60%, transparent 78%); filter: blur(6px); opacity: 0; animation: flame-rise .42s .35s ease-out both, flame-flick .18s .4s ease-in-out 4 alternate; }
-.burn-smoke { position: absolute; left: 50%; top: -30px; width: 90px; height: 150px; transform: translateX(-50%); background: radial-gradient(ellipse, #d9d4c955, transparent 70%); filter: blur(14px); opacity: 0; animation: smoke-rise .5s .78s ease-out both; }
-.burn-skip { position: fixed; bottom: 26px; left: 0; right: 0; text-align: center; color: #b9b3a2; font-size: 10px; letter-spacing: 2px; }
+/* 焚化仪式：斋戒焚香场景为底，疏文作符文纸。先静置可读，再受热卷曲淡出。 */
+.burn-overlay { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; overflow: hidden; isolation: isolate; background: #14110d; backdrop-filter: blur(3px); cursor: pointer; }
+.burn-overlay::before { content: ""; position: absolute; inset: 0; z-index: -2; background: url("../assets/ritual.jpg") center / cover no-repeat; filter: saturate(.78) brightness(.86) contrast(1.03); animation: ritual-push 2.6s ease-out both; }
+.burn-overlay::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(118% 88% at 50% 52%, rgba(10, 9, 7, 0) 22%, rgba(10, 9, 7, .46) 62%, rgba(6, 5, 4, .88) 100%), linear-gradient(180deg, rgba(9, 8, 6, .62) 0%, rgba(9, 8, 6, .22) 38%, rgba(9, 8, 6, .5) 100%); }
+.burn-paper { position: relative; z-index: 1; width: min(392px, 84vw); padding: 30px 34px 38px; background: repeating-linear-gradient(90deg, rgba(122, 101, 68, .05) 0 1px, rgba(255, 255, 255, 0) 1px 3px), repeating-linear-gradient(0deg, rgba(122, 101, 68, .04) 0 1px, rgba(255, 255, 255, 0) 1px 4px), radial-gradient(125% 105% at 50% 0%, #fffdf7 0%, #f9f4e7 56%, #f0e8d6 100%); border: 1px solid #c8b691; border-radius: 3px; box-shadow: 0 18px 46px rgba(0, 0, 0, .46), 0 0 0 5px rgba(250, 245, 235, .05); transform-origin: 50% 100%; animation: paper-ritual 2.5s ease-in-out both; }
+.burn-paper::before { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(154, 123, 79, .34); border-radius: 2px; opacity: .72; pointer-events: none; background: linear-gradient(#9c453a, #9c453a) 0 0/11px 2px no-repeat, linear-gradient(#9c453a, #9c453a) 0 0/2px 11px no-repeat, linear-gradient(#9c453a, #9c453a) 100% 0/11px 2px no-repeat, linear-gradient(#9c453a, #9c453a) 100% 0/2px 11px no-repeat, linear-gradient(#9c453a, #9c453a) 0 100%/11px 2px no-repeat, linear-gradient(#9c453a, #9c453a) 0 100%/2px 11px no-repeat, linear-gradient(#9c453a, #9c453a) 100% 100%/11px 2px no-repeat, linear-gradient(#9c453a, #9c453a) 100% 100%/2px 11px no-repeat; }
+.burn-paper::after { content: "玄"; position: absolute; right: 16px; bottom: 14px; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 2px; background: #9c453a; color: #fdf8ee; font: 600 13px/1 var(--serif); box-shadow: inset 0 0 0 1px rgba(253, 248, 238, .4); opacity: .8; transform: rotate(-3deg); }
+.burn-kicker { position: fixed; top: clamp(28px, 8vh, 78px); left: 0; right: 0; z-index: 2; margin: 0; text-align: center; color: rgba(233, 219, 190, .66); font: 500 13px/1.7 var(--serif); letter-spacing: 6px; text-indent: 6px; }
+.burn-text { margin: 2px 0 0; max-height: 38vh; overflow: auto; color: #2e2a22; font: 17px/2.05 var(--serif); letter-spacing: 1.4px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.burn-text::before { content: "疏 文"; display: block; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(154, 123, 79, .28); color: #a68047; font: 10px/1.6 var(--sans); letter-spacing: 6px; }
+.burn-flame { position: absolute; left: 50%; bottom: -8px; width: 190px; height: 110px; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 100%, rgba(240, 176, 108, .34) 0%, rgba(198, 112, 68, .26) 32%, rgba(122, 54, 38, .2) 60%, rgba(0, 0, 0, 0) 80%); filter: blur(11px); opacity: 0; animation: flame-rise .55s 1.15s ease-out both, flame-flick .2s 1.2s ease-in-out 5 alternate; }
+.burn-smoke { position: absolute; left: 50%; top: -34px; width: 110px; height: 170px; transform: translateX(-50%); background: radial-gradient(ellipse, rgba(217, 212, 201, .42), rgba(0, 0, 0, 0) 70%); filter: blur(16px); opacity: 0; animation: smoke-rise 1.1s 1.5s ease-out both; }
+.burn-skip { position: fixed; bottom: 26px; left: 0; right: 0; z-index: 2; text-align: center; color: rgba(205, 196, 178, .5); font-size: 12px; letter-spacing: 2px; }
+/* 纸燃尽后的静心三秒：场景仍在，只留一句静心语与呼吸。 */
+.burn-hush { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; margin: 0; padding: 0 28px; text-align: center; color: rgba(238, 228, 205, .92); font: 400 18px/1.8 var(--serif); letter-spacing: 7px; text-indent: 7px; opacity: 0; transition: opacity 1.1s ease; pointer-events: none; }
+.burn-overlay.is-hush .burn-hush { opacity: 1; animation: hush-breathe 3s ease-in-out both; }
+.burn-overlay.is-hush .burn-kicker { opacity: .3; transition: opacity .9s ease; }
+.burn-overlay.is-hush .burn-skip { color: rgba(205, 196, 178, .38); }
+.burn-overlay.is-hush .burn-paper { animation: none; opacity: 0; }
+@keyframes hush-breathe { 0% { opacity: 0; } 18% { opacity: .96; } 55% { opacity: .58; } 100% { opacity: .92; } }
 .burn-overlay.is-done { opacity: 0; transition: opacity .18s ease; }
-@keyframes paper-crumple { to { transform: scale(.92) rotate(-2.5deg) skewX(3deg); border-radius: 12% 6% 14% 8%; } }
-@keyframes paper-burn { 40% { filter: brightness(1.35) sepia(.4); } to { transform: scale(.9) rotate(2deg); filter: brightness(.6) sepia(.9) saturate(.6); } }
-@keyframes paper-ash { to { transform: scale(.82) rotate(-3deg) translateY(10px); opacity: .25; filter: grayscale(.8) brightness(.7); } }
-@keyframes flame-rise { from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(.7); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
-@keyframes flame-flick { to { transform: translateX(-50%) scale(1.12, .92); } }
-@keyframes smoke-rise { from { opacity: .85; transform: translateX(-50%) translateY(6px); } to { opacity: 0; transform: translateX(-50%) translateY(-42px); } }
+/* 0–0.85s 完全静止可读，之后受热微旋、卷曲、变暗，最后上浮成灰。 */
+@keyframes paper-ritual {
+  0%, 34% { transform: none; filter: none; opacity: 1; }
+  50% { transform: translateY(-2px) rotate(-.7deg) scale(.996); filter: brightness(1.02) sepia(.05); opacity: 1; }
+  66% { transform: translateY(-5px) rotate(-2.6deg) scale(.94); filter: brightness(.88) sepia(.26); opacity: .96; }
+  82% { transform: translateY(-11px) rotate(-3.4deg) scale(.92); filter: brightness(.8) sepia(.34); opacity: .6; }
+  100% { transform: translateY(-18px) rotate(-4deg) scale(.9); filter: grayscale(.3) brightness(.8); opacity: 0; }
+}
+@keyframes ritual-push { from { transform: scale(1.07); opacity: .84; } to { transform: scale(1); opacity: .96; } }
+@keyframes flame-rise { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.72); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+@keyframes flame-flick { to { transform: translateX(-50%) scale(1.1, .9); } }
+@keyframes smoke-rise { from { opacity: .8; transform: translateX(-50%) translateY(8px) scale(.9); } to { opacity: 0; transform: translateX(-50%) translateY(-54px) scale(1.15); } }
+@media (max-width: 560px) {
+  .burn-paper { width: 88vw; padding: 24px 22px 34px; }
+  .burn-text { font-size: 16px; letter-spacing: 1px; max-height: 34vh; }
+  .burn-kicker { font-size: 12px; letter-spacing: 4px; text-indent: 4px; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .ask-category, .ask-sub, .ask-tagline.is-visible, .ask-paper, .burn-paper, .burn-flame, .burn-smoke { animation: none !important; transition: none !important; }
+  .ask-category, .ask-sub, .ask-tagline.is-visible, .ask-paper, .burn-paper, .burn-flame, .burn-smoke, .burn-hush, .burn-overlay::before { animation: none !important; transition: none !important; }
   .burn-overlay { backdrop-filter: none; }
 }
